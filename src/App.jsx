@@ -13,7 +13,7 @@ import Members from "./pages/member/members";
 import ChangePassword from "./components/ChangePassword";
 import EditProfile from "./components/EditProfile";
 import Sidebar from "./components/Navbar";
-import ShopForm from "./pages/shop";
+import ShopPage from "./pages/shop";
 
 function Layout({ isOpen, setIsOpen }) {
   return (
@@ -45,7 +45,7 @@ function App() {
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/members" element={<Members />} />
-            <Route path="/myshop" element={<ShopForm />} />
+            <Route path="/myshop" element={<ShopPage />} />
           </Route>
         </Routes>
       </div>
