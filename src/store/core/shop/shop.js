@@ -1,20 +1,15 @@
 import { API_URL } from '../../../config/config';
 import HTTPCore from '../../http.core';
-
-
 class ShopHttpService extends HTTPCore {
     constructor() {
         super({});
     }
-
     getEnv() {
         return import.meta.env.VITE_API_ENDPOINT;
     }
-
     getToken() {
         return localStorage.getItem("token");
     }
-
     getHeaders() {
         return {
             headers: {
