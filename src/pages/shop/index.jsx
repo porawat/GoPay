@@ -22,9 +22,10 @@ const ShopPage = () => {
   };
   const gotomyshop = (item) => {
     console.log(item);
+    navigate(`/shopedit/${item.id}`);
   };
   const createshop = () => {
-    navigate("/shopform");
+    navigate("/shopcreate");
   };
   useEffect(() => {
     getmyshop();

@@ -5,7 +5,8 @@ import { useForm } from "react-hook-form";
 import { API_URL } from "../../config/config"; // Removed unused TOKEN
 import axios from "axios";
 
-export default function ShopForm() {
+export default function ShopForm({ action }) {
+  console.log(action);
   const navigate = useNavigate();
   const {
     register,
