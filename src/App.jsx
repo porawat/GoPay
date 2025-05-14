@@ -15,6 +15,7 @@ import EditProfile from "./components/EditProfile";
 import Sidebar from "./components/Navbar";
 import ShopPage from "./pages/shop";
 import ShopForm from "./pages/shop/shopForm";
+import ProtectedRoute from './components/ProtectedRoute';
 
 function Layout({ isOpen, setIsOpen }) {
   return (
@@ -40,15 +41,78 @@ function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route element={<Layout isOpen={isOpen} setIsOpen={setIsOpen} />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/profile/edit" element={<EditProfile />} />
-            <Route path="/change-password" element={<ChangePassword />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/members" element={<Members />} />
-            <Route path="/myshop" element={<ShopPage />} />
-            <Route path="/shopcreate" element={<ShopForm />} />
-            <Route path="/shopedit/:id" element={<ShopForm action="edit" />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile/edit"
+              element={
+                <ProtectedRoute>
+                  <EditProfile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/change-password"
+              element={
+                <ProtectedRoute>
+                  <ChangePassword />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/members"
+              element={
+                <ProtectedRoute>
+                  <Members />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/myshop"
+              element={
+                <ProtectedRoute>
+                  <ShopPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/shopcreate"
+              element={
+                <ProtectedRoute>
+                  <ShopForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/shopedit/:id"
+              element={
+                <ProtectedRoute>
+                  <ShopForm action="edit" />
+                </ProtectedRoute>
+              }
+            />
           </Route>
         </Routes>
       </div>

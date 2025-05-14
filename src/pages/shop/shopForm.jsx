@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom"; // For navigation
+import { useNavigate } from "react-router-dom";
 import { Camera } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { API_URL } from "../../config/config"; // Removed unused TOKEN
+import { API_URL } from "../../config/config";
 import axios from "axios";
 
 export default function ShopForm({ action }) {
@@ -12,7 +12,7 @@ export default function ShopForm({ action }) {
     register,
     handleSubmit: handleFormSubmit,
     formState: { errors },
-    reset, // Add reset from react-hook-form
+    reset,
   } = useForm({
     defaultValues: {
       shopName: "",
@@ -83,6 +83,7 @@ export default function ShopForm({ action }) {
 
     const token = localStorage.getItem("token");
     if (!token) {
+      setSubmitError("กรุณาเข้าสู่ระบบก่อนสร้างร้านค้า");
       navigate("/");
       setIsLoading(false);
       return;
@@ -104,40 +105,46 @@ export default function ShopForm({ action }) {
     console.log("Token:", token);
 
     try {
-      const response = await axios.post(`${API_URL}/createshop2`, formData, {
+      const response = await axios.post(`${API_URL}/shop/createshop`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       });
 
-      if (response.data.status === "success") {
+      if (response.data.code === 1000) {
         setSubmitSuccess("ร้านค้าถูกสร้างเรียบร้อยแล้ว!");
-        // Reset form and file inputs
-        reset(); // Reset react-hook-form fields
+        reset();
         setFileData({ avatar: null, cover: null });
         setAvatarPreview(null);
         setCoverPreview(null);
         if (avatarInputRef.current) {
-          avatarInputRef.current.value = ""; // Clear file input
+          avatarInputRef.current.value = "";
         }
         if (coverInputRef.current) {
-          coverInputRef.current.value = ""; // Clear file input
+          coverInputRef.current.value = "";
         }
-        // Optionally clear success message after 3 seconds
         setTimeout(() => setSubmitSuccess(null), 3000);
       }
 
       console.log("Response:", response.data);
     } catch (error) {
-      console.log("Error:", error);
-      const errorMessage =
-        error.response?.data?.message || "เกิดข้อผิดพลาดในการสร้างร้านค้า";
-      setSubmitError(errorMessage);
-      if (error.response?.data?.code === 4010) {
-        navigate("/");
+      console.error("Error:", error);
+      let errorMessage = "เกิดข้อผิดพลาดในการสร้างร้านค้า";
+      if (error.response) {
+        if (error.response.status === 404) {
+          errorMessage = "ไม่พบ endpoint API กรุณาตรวจสอบ URL หรือเซิร์ฟเวอร์";
+        } else if (error.response.status === 401) {
+          errorMessage = "การยืนยันตัวตนล้มเหลว กรุณาเข้าสู่ระบบใหม่";
+          navigate("/");
+        } else if (error.response.status === 400) {
+          errorMessage = error.response.data.message || "ข้อมูลที่ส่งไม่ถูกต้อง";
+        } else {
+          errorMessage = error.response.data?.message || errorMessage;
+        }
       }
-      console.error("Error:", error.response?.data || error.message);
+      setSubmitError(errorMessage);
+      console.error("Error details:", error.response?.data || error.message);
     } finally {
       setIsLoading(false);
     }
@@ -161,7 +168,7 @@ export default function ShopForm({ action }) {
             ) : (
               <div className="flex items-center gap-2">
                 <Camera size={20} />
-                <span>Add Cover</span>
+                <span>เพิ่มภาพปก</span>
               </div>
             )}
           </div>
@@ -192,7 +199,7 @@ export default function ShopForm({ action }) {
             ) : (
               <div className="flex flex-col items-center justify-center">
                 <Camera size={24} />
-                <span className="text-sm mt-1">Add Image</span>
+                <span className="text-sm mt-1">เพิ่มรูปภาพ</span>
               </div>
             )}
           </div>
@@ -220,19 +227,19 @@ export default function ShopForm({ action }) {
             </label>
             <input
               type="text"
-              placeholder="Shop Name"
+              placeholder="ชื่อร้านค้า"
               className={`w-full p-2 bg-gray-700 rounded border ${
                 errors.shopName ? "border-red-500" : "border-gray-600"
               } text-white`}
               {...register("shopName", {
-                required: "Shop name is required",
+                required: "ต้องระบุชื่อร้านค้า",
                 minLength: {
                   value: 3,
-                  message: "Shop name must be at least 3 characters",
+                  message: "ชื่อร้านค้าต้องมีอย่างน้อย 3 ตัวอักษร",
                 },
                 maxLength: {
                   value: 24,
-                  message: "Shop name must not exceed 24 characters",
+                  message: "ชื่อร้านค้าต้องไม่เกิน 24 ตัวอักษร",
                 },
               })}
             />
@@ -254,11 +261,11 @@ export default function ShopForm({ action }) {
                 errors.shopSlugId ? "border-red-500" : "border-gray-600"
               } text-white`}
               {...register("shopSlugId", {
-                required: "Shop slug ID is required",
+                required: "ต้องระบุ Slug ID",
                 pattern: {
                   value: /^[a-z0-9-]{3,24}$/,
                   message:
-                    "Must contain only a-z, numbers, hyphens and be 3-24 characters",
+                    "ต้องประกอบด้วย a-z, ตัวเลข, เครื่องหมายขีด และมีความยาว 3-24 ตัวอักษร",
                 },
               })}
             />
@@ -270,7 +277,7 @@ export default function ShopForm({ action }) {
             <ul className="mt-2 text-sm text-gray-400">
               <li className="flex items-center gap-1">
                 <span className="h-1 w-1 rounded-full bg-gray-400 inline-block mr-1"></span>
-                ตัวอักษร a-z สามารถใส่ได้ทั้งตัวเลข
+                ตัวอักษร a-z, ตัวเลข, และเครื่องหมายขีด
               </li>
               <li className="flex items-center gap-1">
                 <span className="h-1 w-1 rounded-full bg-gray-400 inline-block mr-1"></span>
@@ -320,7 +327,7 @@ export default function ShopForm({ action }) {
             <label className="block text-sm mb-1">Email</label>
             <input
               type="email"
-              placeholder="Email Address"
+              placeholder="ที่อยู่อีเมล"
               className={`w-full p-2 bg-gray-700 rounded border ${
                 errors.email ? "border-red-500" : "border-gray-600"
               } text-white`}
