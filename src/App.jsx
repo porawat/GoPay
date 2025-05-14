@@ -14,6 +14,7 @@ import ChangePassword from "./components/ChangePassword";
 import EditProfile from "./components/EditProfile";
 import Sidebar from "./components/Navbar";
 import ShopPage from "./pages/shop";
+import ShopForm from "./pages/shop/shopForm";
 
 function Layout({ isOpen, setIsOpen }) {
   return (
@@ -46,6 +47,8 @@ function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/members" element={<Members />} />
             <Route path="/myshop" element={<ShopPage />} />
+            <Route path="/shopcreate" element={<ShopForm />} />
+            <Route path="/shopedit/:id" element={<ShopForm action="edit" />} />
           </Route>
         </Routes>
       </div>
