@@ -15,7 +15,10 @@ import EditProfile from "./components/EditProfile";
 import Sidebar from "./components/Navbar";
 import ShopPage from "./pages/shop";
 import ShopForm from "./pages/shop/shopForm";
-import ProtectedRoute from './components/ProtectedRoute';
+import ShopManage from "./pages/shop/ShopManage";
+import EmployeeList from "./pages/shop/EmployeeList";
+import EmployeeForm from "./pages/shop/EmployeeForm";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function Layout({ isOpen, setIsOpen }) {
   return (
@@ -24,7 +27,7 @@ function Layout({ isOpen, setIsOpen }) {
       <div
         className={`flex-1 transition-all duration-300 ${
           isOpen ? "ml-64" : "ml-20"
-        } bg-gradient-to-r from-indigo-50 to-purple-50 min-h-screen flex items-center justify-center`}
+        } bg-gradient-to-r from-indigo-50 to-purple-50 min-h-screen`}
       >
         <Outlet />
       </div>
@@ -101,7 +104,7 @@ function App() {
               path="/shopcreate"
               element={
                 <ProtectedRoute>
-                  <ShopForm />
+                  <ShopForm action="create" />
                 </ProtectedRoute>
               }
             />
@@ -110,6 +113,48 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ShopForm action="edit" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/shopmanage/:shopId"
+              element={
+                <ProtectedRoute>
+                  <ShopManage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/shop/:shopId/employees"
+              element={
+                <ProtectedRoute>
+                  <EmployeeList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/shop/:shopId/employees/new"
+              element={
+                <ProtectedRoute>
+                  <EmployeeForm action="create" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/shop/:shopId/employees/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <EmployeeForm action="edit" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/shopmanage/:shopId/addproduct"
+              element={
+                <ProtectedRoute>
+                  <div className="p-6 text-center text-gray-600">
+                    หน้าเพิ่มสินค้า (ยังไม่พัฒนา)
+                  </div>
                 </ProtectedRoute>
               }
             />

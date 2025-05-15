@@ -1,13 +1,13 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Camera } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { API_URL } from "../../config/config";
 import axios from "axios";
 
-export default function ShopForm({ action }) {
-  console.log(action);
+export default function ShopForm({ action = "create" }) {
   const navigate = useNavigate();
+  const { id: shopId } = useParams(); // ดึง shopId จาก URL (สำหรับโหมด edit)
   const {
     register,
     handleSubmit: handleFormSubmit,
@@ -35,6 +35,56 @@ export default function ShopForm({ action }) {
 
   const avatarInputRef = useRef(null);
   const coverInputRef = useRef(null);
+
+  // ดึงข้อมูลร้านค้าสำหรับโหมดแก้ไข
+  useEffect(() => {
+    if (action === "edit" && shopId) {
+      const fetchShop = async () => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setSubmitError("กรุณาเข้าสู่ระบบ");
+          navigate("/");
+          return;
+        }
+
+        try {
+          const response = await axios.get(`${API_URL}/shop/${shopId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.data.code === 1000 && response.data.datarow) {
+            const shopData = response.data.datarow;
+            // เติมข้อมูลลงในฟอร์ม
+            reset({
+              shopName: shopData.shop_name || "",
+              shopSlugId: shopData.slug_id || "",
+              tel: shopData.shop_tel || "",
+              email: shopData.email || "",
+              contact_person: shopData.contact_name || "",
+            });
+            // ตั้งค่า preview สำหรับ avatar และ cover ถ้ามี
+            if (shopData.avatar) {
+              setAvatarPreview(`${API_URL}/files/uploads/${shopData.avatar}`);
+            }
+            if (shopData.cover) {
+              setCoverPreview(`${API_URL}/files/uploads/${shopData.cover}`);
+            }
+          } else {
+            setSubmitError("ไม่สามารถดึงข้อมูลร้านค้าได้");
+          }
+        } catch (error) {
+          setSubmitError(
+            "เกิดข้อผิดพลาดในการดึงข้อมูล: " +
+              (error.response?.data?.message || error.message)
+          );
+        }
+      };
+
+      fetchShop();
+    }
+  }, [action, shopId, reset, navigate]);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -83,7 +133,7 @@ export default function ShopForm({ action }) {
 
     const token = localStorage.getItem("token");
     if (!token) {
-      setSubmitError("กรุณาเข้าสู่ระบบก่อนสร้างร้านค้า");
+      setSubmitError("กรุณาเข้าสู่ระบบก่อนดำเนินการ");
       navigate("/");
       setIsLoading(false);
       return;
@@ -101,11 +151,17 @@ export default function ShopForm({ action }) {
       formData.append("cover", fileData.cover);
     }
 
-    console.log("Form submitted:", Object.fromEntries(formData));
-    console.log("Token:", token);
-
     try {
-      const response = await axios.post(`${API_URL}/shop/createshop`, formData, {
+      const isEditMode = action === "edit" && shopId;
+      const url = isEditMode
+        ? `${API_URL}/shop/updateshop/${shopId}`
+        : `${API_URL}/shop/createshop`;
+      const method = isEditMode ? "put" : "post";
+
+      const response = await axios({
+        method,
+        url,
+        data: formData,
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -113,24 +169,34 @@ export default function ShopForm({ action }) {
       });
 
       if (response.data.code === 1000) {
-        setSubmitSuccess("ร้านค้าถูกสร้างเรียบร้อยแล้ว!");
-        reset();
-        setFileData({ avatar: null, cover: null });
-        setAvatarPreview(null);
-        setCoverPreview(null);
-        if (avatarInputRef.current) {
-          avatarInputRef.current.value = "";
+        setSubmitSuccess(
+          isEditMode
+            ? "บันทึกการแก้ไขเรียบร้อยแล้ว!"
+            : "ร้านค้าถูกสร้างเรียบร้อยแล้ว!"
+        );
+        if (!isEditMode) {
+          // รีเซ็ตฟอร์มสำหรับโหมดสร้าง
+          reset();
+          setFileData({ avatar: null, cover: null });
+          setAvatarPreview(null);
+          setCoverPreview(null);
+          if (avatarInputRef.current) avatarInputRef.current.value = "";
+          if (coverInputRef.current) coverInputRef.current.value = "";
         }
-        if (coverInputRef.current) {
-          coverInputRef.current.value = "";
-        }
-        setTimeout(() => setSubmitSuccess(null), 3000);
+        // นำทางกลับไปยังหน้า myshop หลังจากบันทึก
+        setTimeout(() => {
+          setSubmitSuccess(null);
+          navigate("/myshop");
+        }, 2000);
+      } else {
+        setSubmitError(
+          response.data.message || "เกิดข้อผิดพลาดในการดำเนินการ"
+        );
       }
-
-      console.log("Response:", response.data);
     } catch (error) {
-      console.error("Error:", error);
-      let errorMessage = "เกิดข้อผิดพลาดในการสร้างร้านค้า";
+      let errorMessage = `เกิดข้อผิดพลาดในการ${
+        action === "edit" ? "แก้ไข" : "สร้าง"
+      }ร้านค้า`;
       if (error.response) {
         if (error.response.status === 404) {
           errorMessage = "ไม่พบ endpoint API กรุณาตรวจสอบ URL หรือเซิร์ฟเวอร์";
@@ -214,7 +280,9 @@ export default function ShopForm({ action }) {
 
         {/* Form fields */}
         <div className="p-6 bg-gray-800 rounded -mt-24 mb-32">
-          <h2 className="text-xl mb-6">สร้างข้อมูลร้านค้า</h2>
+          <h2 className="text-xl mb-6">
+            {action === "edit" ? "แก้ไขข้อมูลร้านค้า" : "สร้างข้อมูลร้านค้า"}
+          </h2>
 
           {submitSuccess && (
             <p className="text-green-500 mb-4">{submitSuccess}</p>
@@ -354,7 +422,11 @@ export default function ShopForm({ action }) {
                 isLoading ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
-              {isLoading ? "กำลังสร้าง..." : "สร้างร้านค้า"}
+              {isLoading
+                ? "กำลังดำเนินการ..."
+                : action === "edit"
+                ? "บันทึกการแก้ไข"
+                : "สร้างร้านค้า"}
             </button>
           </div>
         </div>
