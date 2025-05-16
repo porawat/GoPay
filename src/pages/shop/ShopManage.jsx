@@ -351,7 +351,7 @@ const ShopManage = () => {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-sm text-gray-500">พนักงาน</p>
-                    <p className="text-2xl font-bold text-gray-800">3</p>
+                    <p className="text-2xl font-bold text-gray-800">0</p>
                   </div>
                   <div className="bg-yellow-100 p-3 rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -365,7 +365,7 @@ const ShopManage = () => {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-sm text-gray-500">คลังสินค้า</p>
-                    <p className="text-2xl font-bold text-gray-800">100</p>
+                    <p className="text-2xl font-bold text-gray-800">0</p>
                   </div>
                   <div className="bg-purple-100 p-3 rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
