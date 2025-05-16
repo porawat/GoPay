@@ -49,7 +49,7 @@ function Sidebar({ isOpen, setIsOpen }) {
       ),
     },
     {
-      name: "myshop",
+      name: "ร้านค้า",
       path: "/myshop",
       icon: <FaStore style={{ color: "#BFECFF" }} />,
     },
