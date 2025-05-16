@@ -1,18 +1,18 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom"; // For navigation
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Camera } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { API_URL } from "../../config/config"; // Removed unused TOKEN
+import { API_URL } from "../../config/config";
 import axios from "axios";
 
-export default function ShopForm({ action }) {
-  console.log(action);
+export default function ShopForm({ action = "create" }) {
   const navigate = useNavigate();
+  const { id: shopId } = useParams(); // ดึง shopId จาก URL (สำหรับโหมด edit)
   const {
     register,
     handleSubmit: handleFormSubmit,
     formState: { errors },
-    reset, // Add reset from react-hook-form
+    reset,
   } = useForm({
     defaultValues: {
       shopName: "",
@@ -35,6 +35,56 @@ export default function ShopForm({ action }) {
 
   const avatarInputRef = useRef(null);
   const coverInputRef = useRef(null);
+
+  // ดึงข้อมูลร้านค้าสำหรับโหมดแก้ไข
+  useEffect(() => {
+    if (action === "edit" && shopId) {
+      const fetchShop = async () => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setSubmitError("กรุณาเข้าสู่ระบบ");
+          navigate("/");
+          return;
+        }
+
+        try {
+          const response = await axios.get(`${API_URL}/shop/${shopId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.data.code === 1000 && response.data.datarow) {
+            const shopData = response.data.datarow;
+            // เติมข้อมูลลงในฟอร์ม
+            reset({
+              shopName: shopData.shop_name || "",
+              shopSlugId: shopData.slug_id || "",
+              tel: shopData.shop_tel || "",
+              email: shopData.email || "",
+              contact_person: shopData.contact_name || "",
+            });
+            // ตั้งค่า preview สำหรับ avatar และ cover ถ้ามี
+            if (shopData.avatar) {
+              setAvatarPreview(`${API_URL}/files/uploads/${shopData.avatar}`);
+            }
+            if (shopData.cover) {
+              setCoverPreview(`${API_URL}/files/uploads/${shopData.cover}`);
+            }
+          } else {
+            setSubmitError("ไม่สามารถดึงข้อมูลร้านค้าได้");
+          }
+        } catch (error) {
+          setSubmitError(
+            "เกิดข้อผิดพลาดในการดึงข้อมูล: " +
+              (error.response?.data?.message || error.message)
+          );
+        }
+      };
+
+      fetchShop();
+    }
+  }, [action, shopId, reset, navigate]);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -83,6 +133,7 @@ export default function ShopForm({ action }) {
 
     const token = localStorage.getItem("token");
     if (!token) {
+      setSubmitError("กรุณาเข้าสู่ระบบก่อนดำเนินการ");
       navigate("/");
       setIsLoading(false);
       return;
@@ -100,44 +151,66 @@ export default function ShopForm({ action }) {
       formData.append("cover", fileData.cover);
     }
 
-    console.log("Form submitted:", Object.fromEntries(formData));
-    console.log("Token:", token);
-
     try {
-      const response = await axios.post(`${API_URL}/createshop2`, formData, {
+      const isEditMode = action === "edit" && shopId;
+      const url = isEditMode
+        ? `${API_URL}/shop/updateshop/${shopId}`
+        : `${API_URL}/shop/createshop`;
+      const method = isEditMode ? "put" : "post";
+
+      const response = await axios({
+        method,
+        url,
+        data: formData,
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       });
 
-      if (response.data.status === "success") {
-        setSubmitSuccess("ร้านค้าถูกสร้างเรียบร้อยแล้ว!");
-        // Reset form and file inputs
-        reset(); // Reset react-hook-form fields
-        setFileData({ avatar: null, cover: null });
-        setAvatarPreview(null);
-        setCoverPreview(null);
-        if (avatarInputRef.current) {
-          avatarInputRef.current.value = ""; // Clear file input
+      if (response.data.code === 1000) {
+        setSubmitSuccess(
+          isEditMode
+            ? "บันทึกการแก้ไขเรียบร้อยแล้ว!"
+            : "ร้านค้าถูกสร้างเรียบร้อยแล้ว!"
+        );
+        if (!isEditMode) {
+          // รีเซ็ตฟอร์มสำหรับโหมดสร้าง
+          reset();
+          setFileData({ avatar: null, cover: null });
+          setAvatarPreview(null);
+          setCoverPreview(null);
+          if (avatarInputRef.current) avatarInputRef.current.value = "";
+          if (coverInputRef.current) coverInputRef.current.value = "";
         }
-        if (coverInputRef.current) {
-          coverInputRef.current.value = ""; // Clear file input
-        }
-        // Optionally clear success message after 3 seconds
-        setTimeout(() => setSubmitSuccess(null), 3000);
+        // นำทางกลับไปยังหน้า myshop หลังจากบันทึก
+        setTimeout(() => {
+          setSubmitSuccess(null);
+          navigate("/myshop");
+        }, 2000);
+      } else {
+        setSubmitError(
+          response.data.message || "เกิดข้อผิดพลาดในการดำเนินการ"
+        );
       }
-
-      console.log("Response:", response.data);
     } catch (error) {
-      console.log("Error:", error);
-      const errorMessage =
-        error.response?.data?.message || "เกิดข้อผิดพลาดในการสร้างร้านค้า";
-      setSubmitError(errorMessage);
-      if (error.response?.data?.code === 4010) {
-        navigate("/");
+      let errorMessage = `เกิดข้อผิดพลาดในการ${
+        action === "edit" ? "แก้ไข" : "สร้าง"
+      }ร้านค้า`;
+      if (error.response) {
+        if (error.response.status === 404) {
+          errorMessage = "ไม่พบ endpoint API กรุณาตรวจสอบ URL หรือเซิร์ฟเวอร์";
+        } else if (error.response.status === 401) {
+          errorMessage = "การยืนยันตัวตนล้มเหลว กรุณาเข้าสู่ระบบใหม่";
+          navigate("/");
+        } else if (error.response.status === 400) {
+          errorMessage = error.response.data.message || "ข้อมูลที่ส่งไม่ถูกต้อง";
+        } else {
+          errorMessage = error.response.data?.message || errorMessage;
+        }
       }
-      console.error("Error:", error.response?.data || error.message);
+      setSubmitError(errorMessage);
+      console.error("Error details:", error.response?.data || error.message);
     } finally {
       setIsLoading(false);
     }
@@ -161,7 +234,7 @@ export default function ShopForm({ action }) {
             ) : (
               <div className="flex items-center gap-2">
                 <Camera size={20} />
-                <span>Add Cover</span>
+                <span>เพิ่มภาพปก</span>
               </div>
             )}
           </div>
@@ -192,7 +265,7 @@ export default function ShopForm({ action }) {
             ) : (
               <div className="flex flex-col items-center justify-center">
                 <Camera size={24} />
-                <span className="text-sm mt-1">Add Image</span>
+                <span className="text-sm mt-1">เพิ่มรูปภาพ</span>
               </div>
             )}
           </div>
@@ -207,7 +280,9 @@ export default function ShopForm({ action }) {
 
         {/* Form fields */}
         <div className="p-6 bg-gray-800 rounded -mt-24 mb-32">
-          <h2 className="text-xl mb-6">สร้างข้อมูลร้านค้า</h2>
+          <h2 className="text-xl mb-6">
+            {action === "edit" ? "แก้ไขข้อมูลร้านค้า" : "สร้างข้อมูลร้านค้า"}
+          </h2>
 
           {submitSuccess && (
             <p className="text-green-500 mb-4">{submitSuccess}</p>
@@ -220,19 +295,19 @@ export default function ShopForm({ action }) {
             </label>
             <input
               type="text"
-              placeholder="Shop Name"
+              placeholder="ชื่อร้านค้า"
               className={`w-full p-2 bg-gray-700 rounded border ${
                 errors.shopName ? "border-red-500" : "border-gray-600"
               } text-white`}
               {...register("shopName", {
-                required: "Shop name is required",
+                required: "ต้องระบุชื่อร้านค้า",
                 minLength: {
                   value: 3,
-                  message: "Shop name must be at least 3 characters",
+                  message: "ชื่อร้านค้าต้องมีอย่างน้อย 3 ตัวอักษร",
                 },
                 maxLength: {
                   value: 24,
-                  message: "Shop name must not exceed 24 characters",
+                  message: "ชื่อร้านค้าต้องไม่เกิน 24 ตัวอักษร",
                 },
               })}
             />
@@ -254,11 +329,11 @@ export default function ShopForm({ action }) {
                 errors.shopSlugId ? "border-red-500" : "border-gray-600"
               } text-white`}
               {...register("shopSlugId", {
-                required: "Shop slug ID is required",
+                required: "ต้องระบุ Slug ID",
                 pattern: {
                   value: /^[a-z0-9-]{3,24}$/,
                   message:
-                    "Must contain only a-z, numbers, hyphens and be 3-24 characters",
+                    "ต้องประกอบด้วย a-z, ตัวเลข, เครื่องหมายขีด และมีความยาว 3-24 ตัวอักษร",
                 },
               })}
             />
@@ -270,7 +345,7 @@ export default function ShopForm({ action }) {
             <ul className="mt-2 text-sm text-gray-400">
               <li className="flex items-center gap-1">
                 <span className="h-1 w-1 rounded-full bg-gray-400 inline-block mr-1"></span>
-                ตัวอักษร a-z สามารถใส่ได้ทั้งตัวเลข
+                ตัวอักษร a-z, ตัวเลข, และเครื่องหมายขีด
               </li>
               <li className="flex items-center gap-1">
                 <span className="h-1 w-1 rounded-full bg-gray-400 inline-block mr-1"></span>
@@ -320,7 +395,7 @@ export default function ShopForm({ action }) {
             <label className="block text-sm mb-1">Email</label>
             <input
               type="email"
-              placeholder="Email Address"
+              placeholder="ที่อยู่อีเมล"
               className={`w-full p-2 bg-gray-700 rounded border ${
                 errors.email ? "border-red-500" : "border-gray-600"
               } text-white`}
@@ -347,7 +422,11 @@ export default function ShopForm({ action }) {
                 isLoading ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
-              {isLoading ? "กำลังสร้าง..." : "สร้างร้านค้า"}
+              {isLoading
+                ? "กำลังดำเนินการ..."
+                : action === "edit"
+                ? "บันทึกการแก้ไข"
+                : "สร้างร้านค้า"}
             </button>
           </div>
         </div>
