@@ -70,9 +70,7 @@ export default function EmployeeForm({ action = "create" }) {
         ? `${API_URL}/employees/${employeeId}`
         : `${API_URL}/employees`;
       const method = isEditMode ? "put" : "post";
-
-      let formattedShopId = shopId;
-      const payload = { ...data, shop_id: formattedShopId };
+      const payload = { ...data, shop_id: shopId };
       console.log("Sending request:", { method, url, payload, token });
       console.log("Payload:", payload);
       const response = await axios({
