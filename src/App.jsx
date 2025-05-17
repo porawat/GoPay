@@ -19,7 +19,8 @@ import ShopManage from "./pages/shop/ShopManage";
 import EmployeeList from "./pages/shop/EmployeeList";
 import EmployeeForm from "./pages/shop/EmployeeForm";
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import ProductPage from "./pages/products/index";
+import ProductForm from "./pages/products/productForm";
 function Layout({ isOpen, setIsOpen }) {
   return (
     <div className="flex min-h-screen">
@@ -149,16 +150,40 @@ function App() {
               }
             />
             <Route
+              path="/shopmanage/:shopId/product"
+              element={
+                <ProtectedRoute>
+                  <ProductPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="/shopmanage/:shopId/addproduct"
               element={
                 <ProtectedRoute>
-                  <div className="p-6 text-center text-gray-600">
-                    หน้าเพิ่มสินค้า (ยังไม่พัฒนา)
-                  </div>
+                  <ProductForm />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/shopmanage/:shopId/:productId/editproduct"
+              element={
+                <ProtectedRoute>
+                  <ProductForm action="edit" />
                 </ProtectedRoute>
               }
             />
           </Route>
+          <Route
+            path="*"
+            element={
+              <div className="flex items-center justify-center h-screen">
+                <h1 className="text-2xl font-bold">404 - Not Found</h1>
+              </div>
+            }
+          />
         </Routes>
       </div>
     </Router>
