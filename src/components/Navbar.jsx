@@ -25,7 +25,7 @@ function Sidebar({ isOpen, setIsOpen }) {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("username");
-    navigate("/");
+    navigate("/login");
   };
 
   const navItems = [
@@ -71,6 +71,11 @@ function Sidebar({ isOpen, setIsOpen }) {
           />
         </svg>
       ),
+    },
+    {
+      name: "Admin",
+      path: "/admin",
+      icon: <FaStore style={{ color: "green" }} />,
     },
   ];
 
