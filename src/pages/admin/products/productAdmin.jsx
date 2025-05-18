@@ -1,13 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Button, Flex, Modal } from "antd";
+import ProductMasterForm from "./modal/productModalForm";
 const ProductAdminPage = () => {
   const navigate = useNavigate();
-
+  const [oppenModal, setOppenModal] = useState(false);
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 text-gray-900">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <h2 className="text-3xl font-bold text-indigo-800">รายชื่อพนักงาน</h2>
+          <h2 className="text-3xl font-bold text-indigo-800">รายการสินค้า</h2>
           <div className="flex space-x-4">
             <button
               onClick={() => navigate(`/admin`)}
@@ -30,7 +32,7 @@ const ProductAdminPage = () => {
               กลับ
             </button>
             <button
-              onClick={() => navigate(`/admin/addproduct`)}
+              onClick={() => setOppenModal(true)}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center shadow-sm"
             >
               <svg
@@ -51,6 +53,25 @@ const ProductAdminPage = () => {
             </button>
           </div>
         </div>
+        {oppenModal && (
+          <Modal
+            title="เพิ่มสินค้าใหม่"
+            open={oppenModal}
+            onCancel={() => setOppenModal(false)}
+            footer={false}
+            maskClosable={false}
+            width={500}
+            className="rounded-lg shadow-lg"
+            centered
+          >
+            <div className="max-h-[70vh] overflow-y-auto p-4">
+              <ProductMasterForm
+                action="create"
+                onCancel={() => setOppenModal(false)}
+              />
+            </div>
+          </Modal>
+        )}
       </div>
     </div>
   );
