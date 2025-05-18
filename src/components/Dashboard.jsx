@@ -13,7 +13,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-
+  const API_URL = import.meta.env.VITE_API_ENDPOINT;
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -25,7 +25,7 @@ function Dashboard() {
       try {
         setLoading(true);
         setError("");
-        const response = await axios.get("http://localhost:3001/dashboard", {
+        const response = await axios.get(`${API_URL}/dashboard`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
