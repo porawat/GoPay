@@ -8,32 +8,38 @@ function Login() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
+  const API_URL = import.meta.env.VITE_API_ENDPOINT;
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsLoading(true);
-  setError("");
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
-  try {
-    const response = await axios.post("http://localhost:3001/login", {
-      username,
-      password,
-    });
-    const { token, role, username: responseUsername, owner, userId } = response.data;
-    localStorage.setItem("token", token);
-    localStorage.setItem("role", role);
-    localStorage.setItem("username", responseUsername);
-    localStorage.setItem("owner", owner);
-    localStorage.setItem("user_id", userId || owner); // เพิ่ม user_id
-    console.log('Login response:', response.data);
-    navigate("/myshop"); // เปลี่ยนไป /myshop
-  } catch (err) {
-    console.error('Login error:', err.response?.data || err.message);
-    setError(err.response?.data?.message || "ล็อกอินไม่สำเร็จ");
-  } finally {
-    setIsLoading(false);
-  }
-};
+    try {
+      const response = await axios.post(`${API_URL}/login`, {
+        username,
+        password,
+      });
+      const {
+        token,
+        role,
+        username: responseUsername,
+        owner,
+        userId,
+      } = response.data;
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", role);
+      localStorage.setItem("username", responseUsername);
+      localStorage.setItem("owner", owner);
+      localStorage.setItem("user_id", userId || owner); // เพิ่ม user_id
+      console.log("Login response:", response.data);
+      navigate("/myshop"); // เปลี่ยนไป /myshop
+    } catch (err) {
+      console.error("Login error:", err.response?.data || err.message);
+      setError(err.response?.data?.message || "ล็อกอินไม่สำเร็จ");
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-indigo-50 to-purple-50">
       <div className="bg-white p-8 rounded-xl shadow-xl w-full max-w-md border border-indigo-100">

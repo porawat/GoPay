@@ -1,37 +1,37 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 function Profile() {
   const [profile, setProfile] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const navigate = useNavigate();
-
+  const API_URL = import.meta.env.VITE_API_ENDPOINT;
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
-      console.log('No token found in localStorage');
-      navigate('/');
+      console.log("No token found in localStorage");
+      navigate("/");
       return;
     }
 
     axios
-      .get('http://localhost:3001/profile', {
+      .get(`${API_URL}/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((response) => {
-        console.log('Profile response:', response.data);
+        console.log("Profile response:", response.data);
         setProfile(response.data);
       })
       .catch((err) => {
-        console.error('Profile fetch error:', err);
-        setError(err.response?.data?.message || 'ไม่สามารถโหลดโปรไฟล์ได้');
+        console.error("Profile fetch error:", err);
+        setError(err.response?.data?.message || "ไม่สามารถโหลดโปรไฟล์ได้");
         if (err.response?.status === 401 || err.response?.status === 403) {
-          console.log('Unauthorized or Forbidden, removing token');
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
-          localStorage.removeItem('username');
-          navigate('/');
+          console.log("Unauthorized or Forbidden, removing token");
+          localStorage.removeItem("token");
+          localStorage.removeItem("role");
+          localStorage.removeItem("username");
+          navigate("/");
         }
       });
   }, [navigate]);
@@ -54,10 +54,15 @@ function Profile() {
             <p className="mt-2 text-gray-600">จัดการข้อมูลส่วนตัวของคุณ</p>
           </div>
           <button
-            onClick={() => navigate('/profile/edit')}
+            onClick={() => navigate("/profile/edit")}
             className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200"
           >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -72,7 +77,12 @@ function Profile() {
         {/* Error Message */}
         {error && (
           <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -89,7 +99,12 @@ function Profile() {
           {/* Header Section with Avatar */}
           <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-6 flex items-center">
             <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center mr-4">
-              <svg className="w-10 h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-10 h-10 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -99,34 +114,52 @@ function Profile() {
               </svg>
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-white">{profile.username}</h3>
+              <h3 className="text-xl font-semibold text-white">
+                {profile.username}
+              </h3>
               <p className="text-indigo-100 capitalize">{profile.role}</p>
             </div>
           </div>
 
           {/* Profile Details */}
           <div className="p-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">ข้อมูลผู้ใช้</h4>
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">
+              ข้อมูลผู้ใช้
+            </h4>
             <div className="space-y-4">
               <div className="flex items-center border-b border-gray-200 pb-4">
-                <div className="w-1/3 text-sm font-medium text-gray-500">อีเมล</div>
-                <div className="w-2/3 text-sm text-gray-900">{profile.email}</div>
+                <div className="w-1/3 text-sm font-medium text-gray-500">
+                  อีเมล
+                </div>
+                <div className="w-2/3 text-sm text-gray-900">
+                  {profile.email}
+                </div>
               </div>
               <div className="flex items-center border-b border-gray-200 pb-4">
-                <div className="w-1/3 text-sm font-medium text-gray-500">ชื่อเต็ม</div>
-                <div className="w-2/3 text-sm text-gray-900">{profile.full_name || 'ไม่ระบุ'}</div>
+                <div className="w-1/3 text-sm font-medium text-gray-500">
+                  ชื่อเต็ม
+                </div>
+                <div className="w-2/3 text-sm text-gray-900">
+                  {profile.full_name || "ไม่ระบุ"}
+                </div>
               </div>
               <div className="flex items-center border-b border-gray-200 pb-4">
-                <div className="w-1/3 text-sm font-medium text-gray-500">หมายเลขโทรศัพท์</div>
-                <div className="w-2/3 text-sm text-gray-900">{profile.phone || 'ไม่ระบุ'}</div>
+                <div className="w-1/3 text-sm font-medium text-gray-500">
+                  หมายเลขโทรศัพท์
+                </div>
+                <div className="w-2/3 text-sm text-gray-900">
+                  {profile.phone || "ไม่ระบุ"}
+                </div>
               </div>
               <div className="flex items-center">
-                <div className="w-1/3 text-sm font-medium text-gray-500">วันที่สมัคร</div>
+                <div className="w-1/3 text-sm font-medium text-gray-500">
+                  วันที่สมัคร
+                </div>
                 <div className="w-2/3 text-sm text-gray-900">
-                  {new Date(profile.created_at).toLocaleDateString('th-TH', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
+                  {new Date(profile.created_at).toLocaleDateString("th-TH", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
                   })}
                 </div>
               </div>
@@ -137,10 +170,15 @@ function Profile() {
         {/* Additional Actions */}
         <div className="mt-6 flex space-x-4">
           <button
-            onClick={() => navigate('/change-password')}
+            onClick={() => navigate("/change-password")}
             className="flex items-center px-4 py-2 bg-white text-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors duration-200"
           >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

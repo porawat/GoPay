@@ -1,26 +1,26 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 function members() {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const navigate = useNavigate();
-
+  const API_URL = import.meta.env.VITE_API_ENDPOINT;
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
-      navigate('/');
+      navigate("/");
       return;
     }
 
     axios
-      .get('http://localhost:3001/members', {
+      .get(`${API_URL}/members`, {
         headers: { Authorization: token },
       })
       .then((response) => setMessage(response.data.message))
       .catch(() => {
-        localStorage.removeItem('token');
-        navigate('/');
+        localStorage.removeItem("token");
+        navigate("/");
       });
   }, [navigate]);
 
