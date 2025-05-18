@@ -340,6 +340,15 @@ const ShopManage = () => {
                 </div>
               </div>
             </div>
+            <p className="text-gray-600">
+              ชื่อร้านค้า: {shop.shop_name || "-"}
+            </p>
+            <p className="text-gray-600">Slug: {shop.slug_id || "-"}</p>
+            <p className="text-gray-600">โทร: {shop.shop_tel || "-"}</p>
+            <p className="text-gray-600">อีเมล: {shop.email || "-"}</p>
+            <p className="text-gray-600">
+              ผู้ติดต่อ: {shop.contact_name || "-"}
+            </p>
           </div>
         )}
 
