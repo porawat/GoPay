@@ -236,7 +236,7 @@ const ShopManage = () => {
         )}
 
         {!isLoading && shop && (
-          <div className="bg-white rounded-lg shadow p-4 mb-6 relative overflow-hidden flex flex-col md:flex-row items-center md:items-start">
+          <div className=" justify-between  bg-white rounded-lg shadow p-4 mb-6 relative overflow-hidden flex flex-col md:flex-row items-center md:items-start">
             <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-md bg-white mr-0 md:mr-4 mb-3 md:mb-0">
               {shop.avatar ? (
                 <img
@@ -340,7 +340,7 @@ const ShopManage = () => {
                 </div>
               </div>
             </div>
-            <p className="text-gray-600">
+            {/* <p className="text-gray-600">
               ชื่อร้านค้า: {shop.shop_name || "-"}
             </p>
             <p className="text-gray-600">Slug: {shop.slug_id || "-"}</p>
@@ -348,7 +348,7 @@ const ShopManage = () => {
             <p className="text-gray-600">อีเมล: {shop.email || "-"}</p>
             <p className="text-gray-600">
               ผู้ติดต่อ: {shop.contact_name || "-"}
-            </p>
+            </p> */}
           </div>
         )}
 
