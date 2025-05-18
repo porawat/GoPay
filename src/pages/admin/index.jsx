@@ -17,8 +17,8 @@ const AdminPage = () => {
                 navigate("/admin/products");
               }}
             >
-              <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-400">
-                <span class="font-extrabold text-blue-600 dark:text-white-400">
+              <div className="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-400">
+                <span className="font-extrabold text-blue-600 dark:text-white-400">
                   {"56"}
                 </span>
               </div>
