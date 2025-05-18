@@ -15,6 +15,7 @@ export default function ProductMasterForm({
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm({
     defaultValues: {
       sku: "",
@@ -70,8 +71,7 @@ export default function ProductMasterForm({
     const res = await CoreAPI.productMasterHttpService.createproductMaster(
       postdata
     );
-    console.log("API Response:", res);
-    const { code, message, data } = res;
+    const { code, message } = res;
     if (code === 1000) {
       setSubmitSuccess("บันทึกข้อมูลสำเร็จ");
       setIsLoading(false);
@@ -106,6 +106,31 @@ export default function ProductMasterForm({
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">
+            หมวดหมู่
+            <span className="text-red-500">*</span>
+          </label>
+          <select
+            className={`w-full p-3 bg-white rounded border ${
+              errors.category_id ? "border-red-500" : "border-gray-300"
+            } text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            {...register("category_id", { required: "ต้องเลือกหมวดหมู่" })}
+          >
+            <option value="">-- เลือกหมวดหมู่ --</option>
+            {categoryList.map((category) => (
+              <option key={category.category_id} value={category.category_id}>
+                {category.cat_name}
+              </option>
+            ))}
+          </select>
+          {errors.category_id && (
+            <p className="text-red-500 text-xs mt-1">
+              {errors.category_id.message}
+            </p>
+          )}
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">
             ชื่อสินค้า<span className="text-red-500">*</span>
           </label>
           <input
@@ -131,20 +156,78 @@ export default function ProductMasterForm({
           <label className="block text-sm font-medium mb-1">
             SKU<span className="text-red-500">*</span>
           </label>
-          <input
-            type="text"
-            placeholder="SKU สินค้า"
-            className={`w-full p-3 bg-white rounded border ${
-              errors.sku ? "border-red-500" : "border-gray-300"
-            } text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-            {...register("sku", {
-              required: "ต้องระบุ sku",
-              minLength: {
-                value: 5,
-                message: "sku ต้องมีอย่างน้อย 5 ตัวอักษร",
-              },
-            })}
-          />
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              placeholder="SKU สินค้า"
+              className={`flex-1 p-3 bg-white rounded border ${
+                errors.sku ? "border-red-500" : "border-gray-300"
+              } text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              {...register("sku", {
+                required: "ต้องระบุ sku",
+                minLength: {
+                  value: 5,
+                  message: "sku ต้องมีอย่างน้อย 5 ตัวอักษร",
+                },
+              })}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                // สร้าง SKU อัตโนมัติ
+                const generateSKU = () => {
+                  // สร้างตัวย่อจากหมวดหมู่ (ถ้ามีการเลือกหมวดหมู่)
+                  const categoryPrefix = (() => {
+                    const selectedCategoryId = document.querySelector(
+                      'select[name="category_id"]'
+                    )?.value;
+                    if (selectedCategoryId) {
+                      const selectedCategory = categoryList.find(
+                        (cat) => cat.category_id === selectedCategoryId
+                      );
+                      if (selectedCategory) {
+                        // ใช้ตัวอักษรแรกของแต่ละคำในชื่อหมวดหมู่
+                        return selectedCategory.cat_prefix
+                          .split(" ")
+                          .map((word) => word)
+
+                          .join("")
+                          .toUpperCase();
+                      }
+                    }
+                    return "PRD"; // ค่าเริ่มต้นถ้าไม่มีหมวดหมู่
+                  })();
+
+                  // สร้างส่วนที่เป็นตัวเลข (timestamp)
+                  const timestamp = Date.now().toString().slice(-6);
+
+                  // สร้างตัวอักษรสุ่ม 2 ตัว
+                  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                  const randomChars = [...Array(2)]
+                    .map(() =>
+                      chars.charAt(Math.floor(Math.random() * chars.length))
+                    )
+                    .join("");
+
+                  return `${categoryPrefix}-${timestamp}${randomChars}`;
+                };
+
+                // อัพเดต field ด้วย SKU ที่สร้างขึ้น
+                const generatedSKU = generateSKU();
+                const field = "sku";
+                const fieldValue = generatedSKU;
+
+                // ใช้ setValue จาก useForm เพื่อตั้งค่า field
+                setValue(field, fieldValue, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
+              }}
+              className="px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              สร้าง SKU
+            </button>
+          </div>
           {errors.sku && (
             <p className="text-red-500 text-xs mt-1">{errors.sku.message}</p>
           )}
@@ -166,33 +249,6 @@ export default function ProductMasterForm({
             </p>
           )}
         </div>
-
-        {action === "create" && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">
-              หมวดหมู่
-              <span className="text-red-500">*</span>
-            </label>
-            <select
-              className={`w-full p-3 bg-white rounded border ${
-                errors.category_id ? "border-red-500" : "border-gray-300"
-              } text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              {...register("category_id", { required: "ต้องเลือกหมวดหมู่" })}
-            >
-              <option value="">-- เลือกหมวดหมู่ --</option>
-              {categoryList.map((category) => (
-                <option key={category.category_id} value={category.category_id}>
-                  {category.cat_name}
-                </option>
-              ))}
-            </select>
-            {errors.category_id && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.category_id.message}
-              </p>
-            )}
-          </div>
-        )}
 
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">
