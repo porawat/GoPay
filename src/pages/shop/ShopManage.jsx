@@ -402,14 +402,14 @@ const ShopManage = () => {
                 </svg>
               </div>
               <h3 className="text-sm font-semibold text-gray-900 mb-1 text-center">
-                สร้างสินค้า
+                สินค้า
               </h3>
             </div>
 
             <div
               onClick={handleManageLocations}
               className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-all transform hover:-translate-y-1 cursor-pointer border-b-2 border-purple-500"
-              title="จัดการสถานที่เก็บสินค้า"
+              title="รายการลูกค้า"
             >
               <div className="flex items-center justify-center h-10 w-10 rounded-full bg-purple-100 mx-auto mb-3">
                 <svg
@@ -434,7 +434,7 @@ const ShopManage = () => {
                 </svg>
               </div>
               <h3 className="text-sm font-semibold text-gray-900 mb-1 text-center">
-                สถานที่
+                ลูกค้า
               </h3>
             </div>
 
