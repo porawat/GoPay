@@ -1,8 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import CoreAPI from "../../../../store";
 
-export default function ProductMasterForm({ action = "create", onCancel }) {
+export default function ProductMasterForm({
+  action = "create",
+  onCancel,
+  onSuccess,
+}) {
   const navigate = useNavigate();
   const { id: employeeId, shopId } = useParams();
   const {
@@ -28,9 +33,28 @@ export default function ProductMasterForm({ action = "create", onCancel }) {
   const [submitError, setSubmitError] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(null);
 
-  useEffect(() => {}, []);
+  const [categoryList, setCategoryList] = useState([]);
 
-  const onSubmit = async (data) => {
+  const getCategoryList = async () => {
+    const res = await CoreAPI.categoryHttpService.getCategory();
+    console.log("API Response:", res);
+    const { code, message, data } = res;
+    try {
+      if (code === 1000) {
+        setCategoryList(data);
+      } else {
+        setCategoryList([]);
+        console.error("Error fetching products:", message);
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    }
+  };
+  useEffect(() => {
+    getCategoryList();
+  }, []);
+
+  const onSubmit = async (postdata) => {
     setIsLoading(true);
     setSubmitError(null);
     setSubmitSuccess(null);
@@ -42,7 +66,25 @@ export default function ProductMasterForm({ action = "create", onCancel }) {
       setIsLoading(false);
       return;
     }
-    console.log("Form data:", data);
+    console.log("Form data:", postdata);
+    const res = await CoreAPI.productMasterHttpService.createproductMaster(
+      postdata
+    );
+    console.log("API Response:", res);
+    const { code, message, data } = res;
+    if (code === 1000) {
+      setSubmitSuccess("บันทึกข้อมูลสำเร็จ");
+      setIsLoading(false);
+      onSuccess(true);
+      reset();
+      setTimeout(() => {
+        setSubmitSuccess(null);
+        onCancel();
+      }, 2000);
+    } else {
+      setSubmitError("ไม่สามารถบันทึกข้อมูลได้: " + message);
+      setIsLoading(false);
+    }
   };
   return (
     <div className="bg-white p-8 rounded-lg ">
@@ -131,14 +173,24 @@ export default function ProductMasterForm({ action = "create", onCancel }) {
               หมวดหมู่
               <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              placeholder="หมวดหมู่สินค้า"
+            <select
               className={`w-full p-3 bg-white rounded border ${
                 errors.category_id ? "border-red-500" : "border-gray-300"
               } text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              {...register("category_id", {})}
-            />
+              {...register("category_id", { required: "ต้องเลือกหมวดหมู่" })}
+            >
+              <option value="">-- เลือกหมวดหมู่ --</option>
+              {categoryList.map((category) => (
+                <option key={category.category_id} value={category.category_id}>
+                  {category.cat_name}
+                </option>
+              ))}
+            </select>
+            {errors.category_id && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.category_id.message}
+              </p>
+            )}
           </div>
         )}
 
