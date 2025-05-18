@@ -21,6 +21,8 @@ import EmployeeForm from "./pages/shop/EmployeeForm";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProductPage from "./pages/products/index";
 import ProductForm from "./pages/products/productForm";
+import AdminPage from "./pages/admin/index";
+import ProductAdminPage from "./pages/admin/products/productAdmin";
 function Layout({ isOpen, setIsOpen }) {
   return (
     <div className="flex min-h-screen">
@@ -43,7 +45,7 @@ function App() {
     <Router>
       <div className="min-h-screen bg-white">
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} />
           <Route element={<Layout isOpen={isOpen} setIsOpen={setIsOpen} />}>
             <Route
               path="/dashboard"
@@ -166,6 +168,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/shopmanage/:shopId/editproduct/:id"
+              element={
+                <ProtectedRoute>
+                  <ProductForm />
+                </ProtectedRoute>
+              }
+            />
 
             <Route
               path="/shopmanage/:shopId/:productId/editproduct"
@@ -175,12 +185,32 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/products"
+              element={
+                <ProtectedRoute>
+                  <ProductAdminPage />
+                </ProtectedRoute>
+              }
+            />
           </Route>
           <Route
             path="*"
             element={
-              <div className="flex items-center justify-center h-screen">
+              <div className="flex flex-col items-center justify-center h-screen">
                 <h1 className="text-2xl font-bold">404 - Not Found</h1>
+                <button className="ml-4 px-4 py-2 bg-blue-500 text-white rounded">
+                  <a href="/login">Go to Login</a>
+                </button>
               </div>
             }
           />
