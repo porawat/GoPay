@@ -1,10 +1,80 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Flex, Modal } from "antd";
 import ProductMasterForm from "./modal/productModalForm";
+import CoreAPI from "../../../store";
+import { Table, Tag } from "antd";
 const ProductAdminPage = () => {
   const navigate = useNavigate();
   const [oppenModal, setOppenModal] = useState(false);
+  const [productsList, setProductsList] = useState([]);
+
+  const getProducts = async () => {
+    const res = await CoreAPI.productMasterHttpService.getproductMaster();
+    console.log("API Response:", res);
+    const { code, message, data } = res;
+
+    try {
+      if (code === 1000) {
+        setProductsList(data);
+      } else {
+        setProductsList([]);
+        console.error("Error fetching products:", message);
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    }
+  };
+  const columns = [
+    {
+      title: "SKU",
+      dataIndex: "sku",
+      key: "sku",
+    },
+    {
+      title: "ชื่อสินค้า",
+      dataIndex: "name",
+      key: "name",
+    },
+    {
+      title: "รายละเอียด",
+      dataIndex: "description",
+      key: "description",
+    },
+    {
+      title: "ราคาทุน",
+      dataIndex: "cost_price",
+      key: "cost_price",
+      render: (text) => `${parseFloat(text).toFixed(2)} ฿`,
+    },
+    {
+      title: "ราคาขาย",
+      dataIndex: "selling_price",
+      key: "selling_price",
+      render: (text) => `${parseFloat(text).toFixed(2)} ฿`,
+    },
+    {
+      title: "สถานะ",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => (
+        <Tag color={status === "ACTIVE" ? "green" : "red"}>{status}</Tag>
+      ),
+    },
+    {
+      title: "วันที่เพิ่ม",
+      dataIndex: "created_at",
+      key: "created_at",
+      render: (date) => new Date(date).toLocaleDateString(),
+    },
+  ];
+  const onSuccess = () => {
+    setOppenModal(false);
+    getProducts();
+  };
+  useEffect(() => {
+    getProducts();
+  }, []);
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 text-gray-900">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -53,6 +123,15 @@ const ProductAdminPage = () => {
             </button>
           </div>
         </div>
+        {productsList.length > 0 && (
+          <Table
+            rowKey="product_id"
+            columns={columns}
+            dataSource={productsList}
+            pagination={{ pageSize: 20 }}
+          />
+        )}
+
         {oppenModal && (
           <Modal
             title="เพิ่มสินค้าใหม่"
@@ -68,6 +147,7 @@ const ProductAdminPage = () => {
               <ProductMasterForm
                 action="create"
                 onCancel={() => setOppenModal(false)}
+                onSuccess={onSuccess}
               />
             </div>
           </Modal>
