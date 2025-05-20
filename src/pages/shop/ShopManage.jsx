@@ -240,8 +240,12 @@ const ShopManage = () => {
         )}
 
         {!isLoading && shop && (
-          <div className=" justify-between  bg-white rounded-lg shadow p-4 mb-6 relative overflow-hidden flex flex-col md:flex-row items-center md:items-start">
-            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-md bg-white mr-0 md:mr-4 mb-3 md:mb-0">
+          <div className="justify-between bg-white rounded-lg shadow p-4 mb-6 relative overflow-hidden flex flex-col md:flex-row items-center md:items-start">
+            <button
+              onClick={handleEditShop}
+              className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-md bg-white mr-0 md:mr-4 mb-3 md:mb-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              title="แก้ไขข้อมูลร้านค้า"
+            >
               {shop.avatar ? (
                 <img
                   src={`${API_URL}/files/uploads/${shop.avatar}`}
@@ -257,7 +261,7 @@ const ShopManage = () => {
                   </span>
                 </div>
               )}
-            </div>
+            </button>
 
             <div className="flex-grow">
               <div className="flex justify-between items-start">
@@ -265,7 +269,7 @@ const ShopManage = () => {
                   {shop.shop_name || "-"}
                 </h2>
                 <button
-                  onClick={handleEditShop}
+                  onClick={handleShopConfig}
                   className="text-blue-600 hover:text-blue-800 flex items-center text-sm"
                 >
                   <svg
@@ -279,10 +283,16 @@ const ShopManage = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                     />
                   </svg>
-                  แก้ไข
+                  การตั้งค่าร้านค้า
                 </button>
               </div>
 
@@ -508,38 +518,6 @@ const ShopManage = () => {
               </div>
               <h3 className="text-sm font-semibold text-gray-900 mb-1 text-center">
                 รายงาน
-              </h3>
-            </div>
-
-            <div
-              onClick={handleShopConfig}
-              className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-all transform hover:-translate-y-1 cursor-pointer border-b-2 border-teal-500"
-              title="การตั้งค่าร้านค้า"
-            >
-              <div className="flex items-center justify-center h-10 w-10 rounded-full bg-teal-100 mx-auto mb-3">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-teal-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1 text-center">
-                การตั้งค่าร้านค้า
               </h3>
             </div>
           </div>
