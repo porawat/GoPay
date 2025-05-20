@@ -16,6 +16,7 @@ import Sidebar from "./components/Navbar";
 import ShopPage from "./pages/shop";
 import ShopForm from "./pages/shop/shopForm";
 import ShopManage from "./pages/shop/ShopManage";
+import ShopConfig from "./pages/shop/ShopConfig";
 import EmployeeList from "./pages/shop/EmployeeList";
 import EmployeeForm from "./pages/shop/EmployeeForm";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -23,6 +24,8 @@ import ProductPage from "./pages/products/index";
 import ProductForm from "./pages/products/productForm";
 import AdminPage from "./pages/admin/index";
 import ProductAdminPage from "./pages/admin/products/productAdmin";
+import CustomerReg from "./pages/customer/customer_reg";
+
 function Layout({ isOpen, setIsOpen }) {
   return (
     <div className="flex min-h-screen">
@@ -46,6 +49,7 @@ function App() {
       <div className="min-h-screen bg-white">
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/join" element={<CustomerReg />} /> {/* เพิ่ม route สำหรับ CustomerReg */}
           <Route element={<Layout isOpen={isOpen} setIsOpen={setIsOpen} />}>
             <Route
               path="/dashboard"
@@ -128,6 +132,14 @@ function App() {
               }
             />
             <Route
+              path="/shopmanage/:shopId/config"
+              element={
+                <ProtectedRoute>
+                  <ShopConfig />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/shop/:shopId/employees"
               element={
                 <ProtectedRoute>
@@ -159,7 +171,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-
             <Route
               path="/shopmanage/:shopId/addproduct"
               element={
@@ -176,7 +187,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-
             <Route
               path="/shopmanage/:shopId/:productId/editproduct"
               element={
@@ -185,7 +195,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-
             <Route
               path="/admin"
               element={
