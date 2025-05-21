@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { QRCodeCanvas as QRCode } from "qrcode.react";
 import { API_URL, DOMAIN_URL } from "../../config/config";
+import CoreAPI from "../../store/";
 import {
   Clock,
   MapPin,
@@ -64,13 +65,12 @@ const ShopConfig = () => {
 
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/shop/${shopId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-
-      if (response.data?.code === 1000) {
-        setShopConfig(response.data.datarow?.config || {});
-        setShopDetails(response.data.datarow || {});
+      const response = await CoreAPI.shopHttpService.getShopById(shopId)
+      console.log(response)
+const {code,datarow} = response;
+      if (code === 1000) {
+        setShopConfig(datarow || {});
+        setShopDetails(datarow || {});
       } else {
         setError(
           "ไม่สามารถดึงข้อมูลร้านค้าได้: " +
@@ -109,7 +109,7 @@ const ShopConfig = () => {
     try {
       setLoading(true);
       setError(null);
-      await axios.put(`${API_URL}/shop/${shopId}/config`, shopConfig, {
+      await axios.put(`${API_URL}/shop/${shopId}`, shopConfig, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setSuccess(true);
