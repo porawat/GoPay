@@ -28,7 +28,6 @@ const CustomerReg = () => {
         setError("ไม่พบรหัสร้านค้าใน URL");
         return;
       }
-
       try {
         setLoading(true);
         const response = await CoreAPI.shopHttpService.getShopById(shopId);
@@ -111,7 +110,6 @@ const CustomerReg = () => {
       </div>
     );
   }
-
   return (
     <div className="mx-4 sm:mx-6 lg:mx-8 my-6 bg-gray-50 min-h-screen">
       <div className="max-w-md mx-auto">
