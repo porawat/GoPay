@@ -75,6 +75,10 @@ const ShopManage = () => {
     navigate(`/shopedit/${shopId}`);
   };
 
+  const handleShopConfig = () => {
+    navigate(`/shopmanage/${shopId}/config`);
+  };
+
   const handleManageLocations = () => {
     navigate(`/shop/${shopId}/locations`);
   };
@@ -236,8 +240,12 @@ const ShopManage = () => {
         )}
 
         {!isLoading && shop && (
-          <div className=" justify-between  bg-white rounded-lg shadow p-4 mb-6 relative overflow-hidden flex flex-col md:flex-row items-center md:items-start">
-            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-md bg-white mr-0 md:mr-4 mb-3 md:mb-0">
+          <div className="justify-between bg-white rounded-lg shadow p-4 mb-6 relative overflow-hidden flex flex-col md:flex-row items-center md:items-start">
+            <button
+              onClick={handleEditShop}
+              className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-md bg-white mr-0 md:mr-4 mb-3 md:mb-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              title="แก้ไขข้อมูลร้านค้า"
+            >
               {shop.avatar ? (
                 <img
                   src={`${API_URL}/files/uploads/${shop.avatar}`}
@@ -253,7 +261,7 @@ const ShopManage = () => {
                   </span>
                 </div>
               )}
-            </div>
+            </button>
 
             <div className="flex-grow">
               <div className="flex justify-between items-start">
@@ -261,7 +269,7 @@ const ShopManage = () => {
                   {shop.shop_name || "-"}
                 </h2>
                 <button
-                  onClick={handleEditShop}
+                  onClick={handleShopConfig}
                   className="text-blue-600 hover:text-blue-800 flex items-center text-sm"
                 >
                   <svg
@@ -275,10 +283,16 @@ const ShopManage = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                     />
                   </svg>
-                  แก้ไข
+                  การตั้งค่าร้านค้า
                 </button>
               </div>
 
@@ -340,15 +354,6 @@ const ShopManage = () => {
                 </div>
               </div>
             </div>
-            {/* <p className="text-gray-600">
-              ชื่อร้านค้า: {shop.shop_name || "-"}
-            </p>
-            <p className="text-gray-600">Slug: {shop.slug_id || "-"}</p>
-            <p className="text-gray-600">โทร: {shop.shop_tel || "-"}</p>
-            <p className="text-gray-600">อีเมล: {shop.email || "-"}</p>
-            <p className="text-gray-600">
-              ผู้ติดต่อ: {shop.contact_name || "-"}
-            </p> */}
           </div>
         )}
 
