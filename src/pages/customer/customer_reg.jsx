@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useParams } from "react-router-dom";
 import axios from "axios";
 import { API_URL } from "../../config/config";
 import { Store, User, Mail, Phone, MapPin, ArrowLeft } from "lucide-react";
+import CoreAPI from "../../store";
 
 const CustomerReg = () => {
   const [searchParams] = useSearchParams();
-  const shopId = searchParams.get("shop_id");
+  const { shopId } = useParams();
+
+  console.log("shopId ==> ", shopId);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -27,14 +31,19 @@ const CustomerReg = () => {
 
       try {
         setLoading(true);
-        const response = await axios.get(`${API_URL}/shop/public/${shopId}`);
-        if (response.data?.code === 1000) {
-          setShopName(response.data.datarow?.shop_name || "ร้านค้า");
+        const response = await CoreAPI.shopHttpService.getShopById(shopId);
+        console.log("response ==> ", response);
+        const { datarow, code, message } = response;
+        if (code === 1000) {
+          setShopName(datarow.shop_name || "ร้านค้า");
         } else {
-          setError("ไม่พบร้านค้า: " + (response.data?.message || "รหัสร้านค้าไม่ถูกต้อง"));
+          setError("ไม่พบร้านค้า: " + (message || "รหัสร้านค้าไม่ถูกต้อง"));
         }
       } catch (error) {
-        console.error("Error fetching shop data:", error.response?.data || error.message);
+        console.error(
+          "Error fetching shop data:",
+          error.response?.data || error.message
+        );
         let errorMessage = "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้";
         if (error.response?.status === 404) {
           errorMessage = "ไม่พบร้านค้าด้วยรหัสนี้";
@@ -75,7 +84,10 @@ const CustomerReg = () => {
       setFormData({ name: "", email: "", phone: "", address: "" });
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
-      console.error("Error registering customer:", error.response?.data || error.message);
+      console.error(
+        "Error registering customer:",
+        error.response?.data || error.message
+      );
       let errorMessage = "ไม่สามารถลงทะเบียนได้";
       if (error.response) {
         if (error.response.status === 400) {

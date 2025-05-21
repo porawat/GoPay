@@ -2,12 +2,28 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { QRCodeCanvas as QRCode } from "qrcode.react";
-import { API_URL } from "../../config/config";
-import { 
-  Clock, MapPin, Mail, MessageSquare, Globe, DollarSign, 
-  Sun, Moon, Download, Store, Phone, User, 
-  Calendar, ChevronRight, AlertTriangle, CheckCircle, X,
-  Bell, Settings, AlertCircle
+import { API_URL, DOMAIN_URL } from "../../config/config";
+import {
+  Clock,
+  MapPin,
+  Mail,
+  MessageSquare,
+  Globe,
+  DollarSign,
+  Sun,
+  Moon,
+  Download,
+  Store,
+  Phone,
+  User,
+  Calendar,
+  ChevronRight,
+  AlertTriangle,
+  CheckCircle,
+  X,
+  Bell,
+  Settings,
+  AlertCircle,
 } from "lucide-react";
 
 const ShopConfig = () => {
@@ -98,7 +114,7 @@ const ShopConfig = () => {
       });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       let errorMessage = "ไม่สามารถบันทึกการตั้งค่าได้";
       if (error.response) {
@@ -112,7 +128,7 @@ const ShopConfig = () => {
         }
       }
       setError(errorMessage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setLoading(false);
     }
@@ -120,7 +136,9 @@ const ShopConfig = () => {
 
   const downloadQRCode = () => {
     const canvas = qrRef.current.querySelector("canvas");
-    const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+    const pngUrl = canvas
+      .toDataURL("image/png")
+      .replace("image/png", "image/octet-stream");
     const downloadLink = document.createElement("a");
     downloadLink.href = pngUrl;
     downloadLink.download = `qr_code_${shopId}.png`;
@@ -129,14 +147,16 @@ const ShopConfig = () => {
     document.body.removeChild(downloadLink);
   };
 
-  const qrCodeUrl = `http://localhost:5173/join?shop_id=${shopId}`;
+  const qrCodeUrl = `${DOMAIN_URL}/join/${shopId}`;
 
   if (loading && !shopConfig.address && !shopDetails.shop_name) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="flex flex-col items-center justify-center bg-white p-8 rounded-2xl shadow-xl">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-4"></div>
-          <p className="text-gray-600 font-medium text-lg">กำลังโหลดข้อมูลร้านค้า...</p>
+          <p className="text-gray-600 font-medium text-lg">
+            กำลังโหลดข้อมูลร้านค้า...
+          </p>
         </div>
       </div>
     );
@@ -153,7 +173,9 @@ const ShopConfig = () => {
                 <Store className="h-8 w-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-1">{shopDetails.shop_name || "ร้านค้า"}</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-1">
+                  {shopDetails.shop_name || "ร้านค้า"}
+                </h1>
                 <div className="flex items-center text-gray-500 text-sm">
                   <Calendar className="h-4 w-4 mr-1" />
                   <span>
@@ -217,7 +239,7 @@ const ShopConfig = () => {
             </div>
           </div>
         )}
-        
+
         {success && (
           <div className="mb-8 animate-slide-in">
             <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-5 rounded-xl shadow-md flex justify-between items-center">
@@ -265,39 +287,55 @@ const ShopConfig = () => {
                       <Store className="h-16 w-16 text-white" />
                     </div>
                   )}
-                  <h3 className="text-xl font-bold text-gray-900">{shopDetails.shop_name || "ไม่มีชื่อ"}</h3>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {shopDetails.shop_name || "ไม่มีชื่อ"}
+                  </h3>
                 </div>
-                
+
                 <div className="space-y-5">
                   <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
                     <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium text-gray-600">อีเมล</p>
-                      <p className="text-gray-800 font-medium">{shopDetails.email || "ไม่มีอีเมล"}</p>
+                      <p className="text-gray-800 font-medium">
+                        {shopDetails.email || "ไม่มีอีเมล"}
+                      </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
                     <Phone className="h-5 w-5 text-indigo-600 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-gray-600">เบอร์โทร</p>
-                      <p className="text-gray-800 font-medium">{shopDetails.shop_tel || "ไม่มีเบอร์โทร"}</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        เบอร์โทร
+                      </p>
+                      <p className="text-gray-800 font-medium">
+                        {shopDetails.shop_tel || "ไม่มีเบอร์โทร"}
+                      </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
                     <User className="h-5 w-5 text-purple-600 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-gray-600">ผู้ติดต่อ</p>
-                      <p className="text-gray-800 font-medium">{shopDetails.contact_name || "ไม่มีผู้ติดต่อ"}</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        ผู้ติดต่อ
+                      </p>
+                      <p className="text-gray-800 font-medium">
+                        {shopDetails.contact_name || "ไม่มีผู้ติดต่อ"}
+                      </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3 p-3 bg-emerald-50 rounded-lg border border-emerald-100">
                     <MapPin className="h-5 w-5 text-emerald-600 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-gray-600">ที่อยู่</p>
-                      <p className="text-gray-800 font-medium">{shopConfig.address || "ไม่มีที่อยู่"}</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        ที่อยู่
+                      </p>
+                      <p className="text-gray-800 font-medium">
+                        {shopConfig.address || "ไม่มีที่อยู่"}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -314,13 +352,13 @@ const ShopConfig = () => {
               </div>
               <div className="p-6">
                 <div className="bg-gradient-to-b from-indigo-50 to-purple-50 rounded-xl p-6 flex flex-col items-center justify-center mb-5">
-                  <div 
-                    ref={qrRef} 
+                  <div
+                    ref={qrRef}
                     className="mb-4 p-3 bg-white rounded-lg shadow-md border-2 border-indigo-100"
                   >
-                    <QRCode 
-                      value={qrCodeUrl} 
-                      size={180} 
+                    <QRCode
+                      value={qrCodeUrl}
+                      size={180}
                       fgColor="#4f46e5"
                       bgColor="#ffffff"
                       level="H"
@@ -328,7 +366,8 @@ const ShopConfig = () => {
                     />
                   </div>
                   <p className="text-sm text-gray-600 text-center mb-5 px-4 leading-relaxed">
-                    ลูกค้าสามารถสแกน QR Code นี้เพื่อเข้าร่วมร้านค้าของคุณได้อย่างรวดเร็ว
+                    ลูกค้าสามารถสแกน QR Code
+                    นี้เพื่อเข้าร่วมร้านค้าของคุณได้อย่างรวดเร็ว
                   </p>
                   <button
                     onClick={downloadQRCode}
@@ -338,15 +377,23 @@ const ShopConfig = () => {
                     ดาวน์โหลด QR Code
                   </button>
                 </div>
-                
+
                 <div className="border-t border-gray-200 pt-4 space-y-3">
                   <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-semibold text-gray-700">URL:</span>
-                    <span className="text-sm text-indigo-700 bg-indigo-50 px-3 py-1 rounded-md border border-indigo-100 font-mono">{qrCodeUrl}</span>
+                    <span className="text-sm font-semibold text-gray-700">
+                      URL:
+                    </span>
+                    <span className="text-sm text-indigo-700 bg-indigo-50 px-3 py-1 rounded-md border border-indigo-100 font-mono">
+                      {qrCodeUrl}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-semibold text-gray-700">Shop ID:</span>
-                    <span className="text-sm text-indigo-700 bg-indigo-50 px-3 py-1 rounded-md border border-indigo-100 font-mono">{shopId}</span>
+                    <span className="text-sm font-semibold text-gray-700">
+                      Shop ID:
+                    </span>
+                    <span className="text-sm text-indigo-700 bg-indigo-50 px-3 py-1 rounded-md border border-indigo-100 font-mono">
+                      {shopId}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -361,9 +408,11 @@ const ShopConfig = () => {
                   <Settings className="h-6 w-6" />
                   การตั้งค่าร้านค้า
                 </h2>
-                <p className="mt-1 text-blue-100">ปรับแต่งการทำงานและลักษณะการแสดงผลของร้านค้า</p>
+                <p className="mt-1 text-blue-100">
+                  ปรับแต่งการทำงานและลักษณะการแสดงผลของร้านค้า
+                </p>
               </div>
-              
+
               <form onSubmit={handleSubmit} className="p-8">
                 {/* Address and Coordinates */}
                 <div className="mb-8">
@@ -371,7 +420,7 @@ const ShopConfig = () => {
                     <MapPin className="h-5 w-5 text-blue-600" />
                     ข้อมูลตำแหน่งร้านค้า
                   </h3>
-                  
+
                   <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       <div className="lg:col-span-3">
@@ -392,7 +441,9 @@ const ShopConfig = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                          <span className="h-5 w-5 bg-blue-100 text-blue-700 rounded flex items-center justify-center font-semibold text-xs">LAT</span>
+                          <span className="h-5 w-5 bg-blue-100 text-blue-700 rounded flex items-center justify-center font-semibold text-xs">
+                            LAT
+                          </span>
                           ละติจูด
                         </label>
                         <input
@@ -408,7 +459,9 @@ const ShopConfig = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                          <span className="h-5 w-5 bg-indigo-100 text-indigo-700 rounded flex items-center justify-center font-semibold text-xs">LNG</span>
+                          <span className="h-5 w-5 bg-indigo-100 text-indigo-700 rounded flex items-center justify-center font-semibold text-xs">
+                            LNG
+                          </span>
                           ลองจิจูด
                         </label>
                         <input
@@ -428,7 +481,8 @@ const ShopConfig = () => {
                             <AlertTriangle className="h-5 w-5" />
                           </div>
                           <div>
-                            คุณสามารถดึงพิกัดจาก Google Maps เพื่อความแม่นยำในการแสดงตำแหน่งร้านค้าบนแผนที่
+                            คุณสามารถดึงพิกัดจาก Google Maps
+                            เพื่อความแม่นยำในการแสดงตำแหน่งร้านค้าบนแผนที่
                           </div>
                         </div>
                       </div>
@@ -442,7 +496,7 @@ const ShopConfig = () => {
                     <Clock className="h-5 w-5 text-blue-600" />
                     เวลาทำการ
                   </h3>
-                  
+
                   <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
@@ -483,11 +537,13 @@ const ShopConfig = () => {
                     <AlertCircle className="h-5 w-5 text-blue-600" />
                     สถานะร้านค้า
                   </h3>
-                  
+
                   <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                     <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">เลือกสถานะการให้บริการ</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          เลือกสถานะการให้บริการ
+                        </label>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div
                             className={`p-4 rounded-xl border-2 cursor-pointer transition flex items-center gap-3 ${
@@ -495,39 +551,61 @@ const ShopConfig = () => {
                                 ? "bg-green-50 border-green-500 shadow-md"
                                 : "bg-white border-gray-200 hover:border-gray-300"
                             }`}
-                            onClick={() => setShopConfig(prev => ({ ...prev, is_active: "ACTIVE" }))}
+                            onClick={() =>
+                              setShopConfig((prev) => ({
+                                ...prev,
+                                is_active: "ACTIVE",
+                              }))
+                            }
                           >
                             <div
                               className={`h-6 w-6 rounded-full flex items-center justify-center ${
-                                shopConfig.is_active === "ACTIVE" ? "bg-green-500" : "bg-gray-200"
+                                shopConfig.is_active === "ACTIVE"
+                                  ? "bg-green-500"
+                                  : "bg-gray-200"
                               }`}
                             >
                               <CheckCircle className="h-4 w-4 text-white" />
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-900">เปิดให้บริการ</p>
-                              <p className="text-sm text-gray-600">ลูกค้าสามารถดูร้านค้าและสั่งซื้อสินค้าได้</p>
+                              <p className="font-semibold text-gray-900">
+                                เปิดให้บริการ
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                ลูกค้าสามารถดูร้านค้าและสั่งซื้อสินค้าได้
+                              </p>
                             </div>
                           </div>
-                          
+
                           <div
                             className={`p-4 rounded-xl border-2 cursor-pointer transition flex items-center gap-3 ${
                               shopConfig.is_active === "INACTIVE"
                                 ? "bg-red-50 border-red-500 shadow-md"
                                 : "bg-white border-gray-200 hover:border-gray-300"
                             }`}
-                            onClick={() => setShopConfig(prev => ({ ...prev, is_active: "INACTIVE" }))}
+                            onClick={() =>
+                              setShopConfig((prev) => ({
+                                ...prev,
+                                is_active: "INACTIVE",
+                              }))
+                            }
                           >
                             <div
                               className={`h-6 w-6 rounded-full flex items-center justify-center ${
-                                shopConfig.is_active === "INACTIVE" ? "bg-red-500" : "bg-gray-200"
+                                shopConfig.is_active === "INACTIVE"
+                                  ? "bg-red-500"
+                                  : "bg-gray-200"
                               }`}
                             >
                               <X className="h-4 w-4 text-white" />
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-900">ปิดให้บริการ</p>
-                              <p className="text-sm text-gray-600">ลูกค้าไม่สามารถสั่งซื้อสินค้าได้</p>
+                              <p className="font-semibold text-gray-900">
+                                ปิดให้บริการ
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                ลูกค้าไม่สามารถสั่งซื้อสินค้าได้
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -547,23 +625,33 @@ const ShopConfig = () => {
                     <Bell className="h-5 w-5 text-blue-600" />
                     การแจ้งเตือน
                   </h3>
-                  
+
                   <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                     <div className="space-y-5">
-                      <p className="text-sm text-gray-600 mb-4">เลือกช่องทางที่คุณต้องการรับการแจ้งเตือนเมื่อมีการสั่งซื้อสินค้าใหม่</p>
-                      
+                      <p className="text-sm text-gray-600 mb-4">
+                        เลือกช่องทางที่คุณต้องการรับการแจ้งเตือนเมื่อมีการสั่งซื้อสินค้าใหม่
+                      </p>
+
                       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                        <div 
+                        <div
                           className={`p-4 rounded-xl border-2 flex-1 cursor-pointer flex items-center gap-3 transition ${
                             shopConfig.notification_email === 1
                               ? "bg-blue-50 border-blue-500 shadow-md"
                               : "bg-white border-gray-200 hover:border-gray-300"
                           }`}
-                          onClick={() => setShopConfig(prev => ({ ...prev, notification_email: prev.notification_email === 1 ? 0 : 1 }))}
+                          onClick={() =>
+                            setShopConfig((prev) => ({
+                              ...prev,
+                              notification_email:
+                                prev.notification_email === 1 ? 0 : 1,
+                            }))
+                          }
                         >
                           <div
                             className={`h-6 w-6 rounded-full flex items-center justify-center ${
-                              shopConfig.notification_email === 1 ? "bg-blue-500" : "bg-gray-200"
+                              shopConfig.notification_email === 1
+                                ? "bg-blue-500"
+                                : "bg-gray-200"
                             }`}
                           >
                             {shopConfig.notification_email === 1 ? (
@@ -575,8 +663,12 @@ const ShopConfig = () => {
                           <div className="flex items-center gap-2">
                             <Mail className="h-5 w-5 text-blue-600" />
                             <div>
-                              <p className="font-medium text-gray-900">แจ้งเตือนทางอีเมล</p>
-                              <p className="text-sm text-gray-500 hidden sm:block">ส่งข้อมูลคำสั่งซื้อไปยังอีเมลของคุณ</p>
+                              <p className="font-medium text-gray-900">
+                                แจ้งเตือนทางอีเมล
+                              </p>
+                              <p className="text-sm text-gray-500 hidden sm:block">
+                                ส่งข้อมูลคำสั่งซื้อไปยังอีเมลของคุณ
+                              </p>
                             </div>
                           </div>
                           <input
@@ -585,18 +677,26 @@ const ShopConfig = () => {
                             value={shopConfig.notification_email}
                           />
                         </div>
-                        
-                        <div 
+
+                        <div
                           className={`p-4 rounded-xl border-2 flex-1 cursor-pointer flex items-center gap-3 transition ${
                             shopConfig.notification_sms === 1
                               ? "bg-indigo-50 border-indigo-500 shadow-md"
                               : "bg-white border-gray-200 hover:border-gray-300"
                           }`}
-                          onClick={() => setShopConfig(prev => ({ ...prev, notification_sms: prev.notification_sms === 1 ? 0 : 1 }))}
+                          onClick={() =>
+                            setShopConfig((prev) => ({
+                              ...prev,
+                              notification_sms:
+                                prev.notification_sms === 1 ? 0 : 1,
+                            }))
+                          }
                         >
                           <div
                             className={`h-6 w-6 rounded-full flex items-center justify-center ${
-                              shopConfig.notification_sms === 1 ? "bg-indigo-500" : "bg-gray-200"
+                              shopConfig.notification_sms === 1
+                                ? "bg-indigo-500"
+                                : "bg-gray-200"
                             }`}
                           >
                             {shopConfig.notification_sms === 1 ? (
@@ -608,8 +708,12 @@ const ShopConfig = () => {
                           <div className="flex items-center gap-2">
                             <MessageSquare className="h-5 w-5 text-indigo-600" />
                             <div>
-                              <p className="font-medium text-gray-900">แจ้งเตือนทาง SMS</p>
-                              <p className="text-sm text-gray-500 hidden sm:block">ส่ง SMS แจ้งเตือนไปยังเบอร์มือถือของคุณ</p>
+                              <p className="font-medium text-gray-900">
+                                แจ้งเตือนทาง SMS
+                              </p>
+                              <p className="text-sm text-gray-500 hidden sm:block">
+                                ส่ง SMS แจ้งเตือนไปยังเบอร์มือถือของคุณ
+                              </p>
                             </div>
                           </div>
                           <input
@@ -624,7 +728,8 @@ const ShopConfig = () => {
                           <AlertTriangle className="h-5 w-5" />
                         </div>
                         <div>
-                          หากคุณปิดการแจ้งเตือนทั้งหมด คุณจะต้องตรวจสอบคำสั่งซื้อใหม่ด้วยตนเองในระบบ
+                          หากคุณปิดการแจ้งเตือนทั้งหมด
+                          คุณจะต้องตรวจสอบคำสั่งซื้อใหม่ด้วยตนเองในระบบ
                         </div>
                       </div>
                     </div>
@@ -637,7 +742,7 @@ const ShopConfig = () => {
                     <Settings className="h-5 w-5 text-blue-600" />
                     การตั้งค่าอื่นๆ
                   </h3>
-                  
+
                   <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div>
@@ -660,7 +765,7 @@ const ShopConfig = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                           <DollarSign className="h-5 w-5 text-green-600" />
@@ -683,7 +788,7 @@ const ShopConfig = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                           {shopConfig.theme === "light" ? (
@@ -694,25 +799,35 @@ const ShopConfig = () => {
                           ธีม
                         </label>
                         <div className="flex gap-4">
-                          <div 
+                          <div
                             className={`p-3 rounded-xl border-2 flex-1 cursor-pointer flex items-center gap-2 transition ${
                               shopConfig.theme === "light"
                                 ? "bg-amber-50 border-amber-500 shadow-md"
                                 : "bg-white border-gray-200 hover:border-gray-300"
                             }`}
-                            onClick={() => setShopConfig(prev => ({ ...prev, theme: "light" }))}
+                            onClick={() =>
+                              setShopConfig((prev) => ({
+                                ...prev,
+                                theme: "light",
+                              }))
+                            }
                           >
                             <Sun className="h-5 w-5 text-amber-500" />
                             <span className="font-medium">สว่าง</span>
                           </div>
-                          
-                          <div 
+
+                          <div
                             className={`p-3 rounded-xl border-2 flex-1 cursor-pointer flex items-center gap-2 transition ${
                               shopConfig.theme === "dark"
                                 ? "bg-indigo-50 border-indigo-500 shadow-md"
                                 : "bg-white border-gray-200 hover:border-gray-300"
                             }`}
-                            onClick={() => setShopConfig(prev => ({ ...prev, theme: "dark" }))}
+                            onClick={() =>
+                              setShopConfig((prev) => ({
+                                ...prev,
+                                theme: "dark",
+                              }))
+                            }
                           >
                             <Moon className="h-5 w-5 text-indigo-600" />
                             <span className="font-medium">มืด</span>

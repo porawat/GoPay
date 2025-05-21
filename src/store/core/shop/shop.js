@@ -18,23 +18,30 @@ class ShopHttpService extends HTTPCore {
             },
         };
     }
-
-    // ==============================
     CreateShop(param) {
         let url = this.getEnv();
         let path = `/login`;
         let fullUrl = url + path;
         return this.post(fullUrl, param);
     }
-
     getmyshop(data) {
         let config = this.getHeaders();
         let path = `${API_URL}/getmyshop`;
         console.log(config, path)
-
-        //  let fullUrl = url + path;
-
         return this.post(path, data, config);
+    }
+    joinShop(data) {
+        let config = this.getHeaders();
+        let path = `${API_URL}/join/${data}`;
+        console.log(config, path)
+        return this.get(path, config);
+    }
+    getShopById(data) {
+        console.log("getShopById ==> " + data)
+        let config = this.getHeaders();
+        let path = `${API_URL}/shop/${data}`;
+        console.log(config, path)
+        return this.get(path, config);
     }
 }
 

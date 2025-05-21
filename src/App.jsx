@@ -49,7 +49,8 @@ function App() {
       <div className="min-h-screen bg-white">
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/join" element={<CustomerReg />} /> {/* เพิ่ม route สำหรับ CustomerReg */}
+          <Route path="/join/:shopId" element={<CustomerReg />} />{" "}
+          {/* เพิ่ม route สำหรับ CustomerReg */}
           <Route element={<Layout isOpen={isOpen} setIsOpen={setIsOpen} />}>
             <Route
               path="/dashboard"
