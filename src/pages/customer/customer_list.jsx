@@ -1,204 +1,177 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
-import { API_URL } from "../../config/config";
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { API_URL } from '../../config/config';
 
-const CustomerList = () => {
-  const navigate = useNavigate();
+export default function CustomerList() {
   const { shopId } = useParams();
-  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
-  const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [actionLoading, setActionLoading] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchCustomers = async () => {
-    if (!token || !shopId) {
-      setError("กรุณาล็อกอินเพื่อดูข้อมูลลูกค้า");
-      navigate("/login");
-      return;
-    }
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      setIsLoading(true);
+      setError(null);
+      const token = localStorage.getItem('token');
 
-    setIsLoading(true);
-    setError(null);
+      console.log('Token:', token);
+      console.log('Shop ID:', shopId);
+      console.log('Fetching customers from:', `${API_URL}/customer/all/${shopId}?page=${page}&limit=10`);
 
-    console.log("Fetching customers from:", `${API_URL}/all/${shopId}`);
-    console.log("Token:", token);
-
-    try {
-      const response = await axios.get(`${API_URL}/all/${shopId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      console.log("Response:", response.data);
-
-      if (response.data?.code === 1000) {
-        setCustomers(response.data?.data || []);
-      } else {
-        setError(
-          "ไม่สามารถดึงข้อมูลลูกค้าได้: " +
-            (response.data?.message || "ข้อผิดพลาดไม่ทราบสาเหตุ")
-        );
+      if (!token) {
+        setError('กรุณาเข้าสู่ระบบ');
+        navigate('/login');
+        return;
       }
-    } catch (error) {
-      console.error(
-        "Error fetching customers:",
-        error.response?.data || error.message
-      );
-      let errorMessage = "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์";
-      if (error.response) {
-        if (error.response.status === 404) {
-          errorMessage = "ไม่พบข้อมูลลูกค้า หรือรหัสร้านค้าไม่ถูกต้อง";
-        } else if (error.response.status === 401) {
-          errorMessage = "เซสชันหมดอายุ กรุณาล็อกอินใหม่";
-          navigate("/login");
-        } else if (error.response.status === 403) {
-          errorMessage = "คุณไม่มีสิทธิ์เข้าถึงร้านค้านี้";
-          navigate("/myshop");
-        } else {
-          errorMessage = error.response.data?.message || error.message;
+
+      if (!shopId) {
+        setError('ไม่พบรหัสร้านค้า');
+        navigate('/myshop');
+        return;
+      }
+
+      try {
+        // ดึงข้อมูลลูกค้าโดยตรง (ลบ shop validation ถ้า backend จัดการแล้ว)
+        const response = await axios.get(`${API_URL}/customer/all/${shopId}?page=${page}&limit=10`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000,
+        });
+        console.log('Customers API Response:', response.data);
+
+        if (!response.data || typeof response.data !== 'object') {
+          throw new Error('Response ไม่ใช่ JSON หรือโครงสร้างไม่ถูกต้อง');
         }
+
+        if (response.data?.code === 1000) {
+          const data = response.data?.data || [];
+          if (!Array.isArray(data)) {
+            console.warn('Customer response data is not an array:', data);
+            setCustomers([]);
+          } else {
+            setCustomers(data);
+            setTotalPages(response.data?.pagination?.totalPages || 1);
+          }
+        } else {
+          throw new Error(response.data?.message || 'ข้อผิดพลาดไม่ทราบสาเหตุ');
+        }
+      } catch (err) {
+        console.error('Failed to fetch customers:', err);
+        console.log('Error response:', err.response?.data);
+        let errorMessage = 'ไม่สามารถดึงรายชื่อลูกค้าได้';
+        if (err.response) {
+          if (err.response.status === 404) {
+            errorMessage = `ไม่มีลูกค้าสำหรับร้านค้า (รหัส: ${shopId})`;
+          } else if (err.response.status === 401) {
+            errorMessage = 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่';
+            navigate('/login');
+          } else if (err.response.status === 403) {
+            errorMessage = err.response.data?.message || 'คุณไม่มีสิทธิ์ในการดูรายชื่อลูกค้า';
+          } else if (err.response.data?.message) {
+            errorMessage = err.response.data.message;
+          } else if (typeof err.response.data === 'string' && err.response.data.includes('Cannot GET')) {
+            errorMessage = `ไม่พบ endpoint สำหรับร้านค้า (รหัส: ${shopId})`;
+          }
+        } else if (err.code === 'ECONNABORTED') {
+          errorMessage = 'การเชื่อมต่อหมดเวลา กรุณาลองใหม่';
+        } else {
+          errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
+        }
+        setError(errorMessage);
+      } finally {
+        setIsLoading(false);
       }
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+    fetchCustomers();
+  }, [shopId, navigate, page]);
 
   const handleApproveCustomer = async (customerId) => {
+    if (!window.confirm('คุณแน่ใจหรือไม่ว่าต้องการอนุมัติลูกค้านี้?')) return;
+
+    setActionLoading((prev) => ({ ...prev, [customerId]: true }));
     try {
+      const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${API_URL}/approve/${customerId}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+        `${API_URL}/customer/approve/${customerId}`,
+        { approved: true },
+        { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 }
       );
 
       if (response.data?.code === 1000) {
         setCustomers((prev) =>
-          prev.map((c) =>
-            c.id === customerId ? { ...c, status: "APPROVED" } : c
-          )
+          prev.map((c) => (c.id === customerId ? { ...c, status: 'APPROVED' } : c))
         );
       } else {
-        setError(
-          "ไม่สามารถอนุมัติลูกค้าได้: " +
-            (response.data?.message || "ข้อผิดพลาดไม่ทราบสาเหตุ")
-        );
+        setError(response.data?.message || 'ไม่สามารถอนุมัติลูกค้าได้');
       }
-    } catch (error) {
-      console.error(
-        "Error approving customer:",
-        error.response?.data || error.message
-      );
-      let errorMessage = "เกิดข้อผิดพลาดในการอนุมัติลูกค้า";
-      if (error.response?.status === 403) {
-        errorMessage = "คุณไม่มีสิทธิ์อนุมัติลูกค้านี้";
-        navigate("/myshop");
+    } catch (err) {
+      console.error('Error approving customer:', err.response?.data || err.message);
+      let errorMessage = 'เกิดข้อผิดพลาดในการอนุมัติลูกค้า';
+      if (err.response?.status === 403) {
+        errorMessage = err.response.data?.message || 'คุณไม่มีสิทธิ์อนุมัติลูกค้านี้';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
       }
       setError(errorMessage);
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [customerId]: false }));
     }
   };
 
   const handleRejectCustomer = async (customerId) => {
+    if (!window.confirm('คุณแน่ใจหรือไม่ว่าต้องการปฏิเสธลูกค้านี้?')) return;
+
+    setActionLoading((prev) => ({ ...prev, [customerId]: true }));
     try {
+      const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${API_URL}/reject/${customerId}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+        `${API_URL}/customer/reject/${customerId}`,
+        { rejected: true },
+        { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 }
       );
 
       if (response.data?.code === 1000) {
         setCustomers((prev) =>
           prev.map((c) =>
-            c.id === customerId
-              ? { ...c, status: "REJECTED", is_active: "INACTIVE" }
-              : c
+            c.id === customerId ? { ...c, status: 'REJECTED', is_active: 'INACTIVE' } : c
           )
         );
       } else {
-        setError(
-          "ไม่สามารถปฏิเสธลูกค้าได้: " +
-            (response.data?.message || "ข้อผิดพลาดไม่ทราบสาเหตุ")
-        );
+        setError(response.data?.message || 'ไม่สามารถปฏิเสธลูกค้าได้');
       }
-    } catch (error) {
-      console.error(
-        "Error rejecting customer:",
-        error.response?.data || error.message
-      );
-      let errorMessage = "เกิดข้อผิดพลาดในการปฏิเสธลูกค้า";
-      if (error.response?.status === 403) {
-        errorMessage = "คุณไม่มีสิทธิ์ปฏิเสธลูกค้านี้";
-        navigate("/myshop");
+    } catch (err) {
+      console.error('Error rejecting customer:', err.response?.data || err.message);
+      let errorMessage = 'เกิดข้อผิดพลาดในการปฏิเสธลูกค้า';
+      if (err.response?.status === 403) {
+        errorMessage = err.response.data?.message || 'คุณไม่มีสิทธิ์ปฏิเสธลูกค้านี้';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
       }
       setError(errorMessage);
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [customerId]: false }));
     }
   };
 
-  useEffect(() => {
-    fetchCustomers();
-  }, [shopId, token, navigate]);
+  const filteredCustomers = customers.filter((customer) => {
+    const fullName = `${customer.name || ''}`.toLowerCase();
+    const email = (customer.email || '').toLowerCase();
+    const searchLower = searchTerm.toLowerCase();
+    return fullName.includes(searchLower) || email.includes(searchLower);
+  });
 
   return (
-    <div className="flex-1 p-6 bg-gradient-to-b from-blue-50 to-gray-100 min-h-screen">
-      <div className="mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <span className="text-blue-600 mr-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-8 w-8"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
-              </span>
-              รายการลูกค้า
-            </h1>
-            <p className="mt-1 text-gray-600 flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-2 text-blue-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-              จัดการสถานะลูกค้าที่ลงทะเบียน
-            </p>
-          </div>
-          <button
-            onClick={() => navigate(`/shopmanage/${shopId}`)}
-            className="btn-primary flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition-colors"
-          >
+    <div className="flex-1 p-6 bg-gradient-to-b from-indigo-50 via-purple-50 to-blue-50 text-gray-900">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+          <h2 className="text-3xl font-bold text-indigo-800 flex items-center">
             <svg
-              className="w-5 h-5 mr-2"
+              className="w-8 h-8 mr-2 text-indigo-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -208,8 +181,23 @@ const CustomerList = () => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
               />
+            </svg>
+            รายชื่อลูกค้า
+          </h2>
+          <button
+            onClick={() => navigate(`/shopmanage/${shopId}`)}
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center shadow-sm"
+          >
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             กลับ
           </button>
@@ -217,141 +205,198 @@ const CustomerList = () => {
 
         {error && (
           <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg shadow-sm flex justify-between items-center border-l-4 border-red-500">
-            <div className="flex items-center">
+            <span className="flex items-center">
               <svg
+                className="w-5 h-5 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
               >
                 <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
                 />
               </svg>
-              <span>{error}</span>
-            </div>
-            <button
-              onClick={fetchCustomers}
-              className="text-red-700 px-3 py-1 bg-red-200 rounded-md hover:bg-red-300 transition-colors flex items-center"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+              {error}
+            </span>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => window.location.reload()}
+                className="text-red-700 hover:text-red-800 font-medium hover:underline flex items-center"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              ลองใหม่
-            </button>
-          </div>
-        )}
-
-        {isLoading && (
-          <div className="mb-6 p-4 bg-white rounded-lg shadow-md text-center">
-            <div className="flex justify-center items-center">
-              <svg
-                className="animate-spin h-8 w-8 text-blue-600"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
+                <svg
+                  className="w-4 h-4 mr-1"
+                  fill="none"
                   stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                ลองใหม่
+              </button>
+              {error.includes('คุณไม่มีสิทธิ์') && (
+                <button
+                  onClick={() => navigate('/myshop')}
+                  className="text-red-700 hover:text-red-800 font-medium hover:underline flex items-center"
+                >
+                  <svg
+                    className="w-4 h-4 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 12l2-2m0 0l7-7 7 7m-7-7v14"
+                    />
+                  </svg>
+                  กลับไปที่ร้านค้าของฉัน
+                </button>
+              )}
             </div>
-            <p className="text-gray-600 mt-2">กำลังโหลดข้อมูลลูกค้า...</p>
           </div>
         )}
 
-        {!isLoading && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              รายการลูกค้า
-            </h2>
-            {customers.length === 0 ? (
-              <p className="text-gray-600">ไม่มีข้อมูลลูกค้า</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ชื่อ
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        อีเมล
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        เบอร์โทร
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        สถานะ
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        การกระทำ
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {customers.map((customer) => (
-                      <tr key={customer.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {customer.name || "-"}
+        {!isLoading && customers.length > 0 && (
+          <div className="mb-6">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg
+                  className="h-5 w-5 text-gray-400"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="ค้นหาลูกค้า..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 block w-full rounded-lg shadow-sm"
+              />
+            </div>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg shadow-lg">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mb-4"></div>
+            <p className="text-gray-600 font-medium">กำลังโหลดข้อมูล...</p>
+          </div>
+        ) : customers.length === 0 ? (
+          <div className="bg-white rounded-lg p-12 text-center shadow-lg border border-gray-100">
+            <svg
+              className="mx-auto h-16 w-16 text-gray-400 mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+            <p className="text-xl font-semibold text-gray-800">ยังไม่มีรายชื่อลูกค้า</p>
+            <p className="mt-2 text-gray-600">ไม่มีลูกค้าลงทะเบียนสำหรับร้านค้านี้</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-100">
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto">
+                <thead>
+                  <tr className="bg-gray-50 text-left border-b border-gray-200">
+                    <th className="p-4 font-semibold text-gray-700">ชื่อ</th>
+                    <th className="p-4 font-semibold text-gray-700">อีเมล</th>
+                    <th className="p-4 font-semibold text-gray-700">เบอร์โทร</th>
+                    <th className="p-4 font-semibold text-gray-700">สถานะ</th>
+                    <th className="p-4 font-semibold text-gray-700">การดำเนินการ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCustomers.length > 0 ? (
+                    filteredCustomers.map((customer) => (
+                      <tr
+                        key={customer.id}
+                        className="border-t border-gray-200 hover:bg-indigo-50 transition-colors"
+                      >
+                        <td className="p-4 font-medium">
+                          {customer.name ? customer.name : <span className="text-gray-400 italic">ไม่ระบุชื่อ</span>}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {customer.email || "-"}
+                        <td className="p-4">
+                          {customer.email ? (
+                            customer.email
+                          ) : (
+                            <span className="text-gray-400 italic">ไม่ระบุอีเมล</span>
+                          )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {customer.phone || "-"}
+                        <td className="p-4">
+                          {customer.phone ? (
+                            customer.phone
+                          ) : (
+                            <span className="text-gray-400 italic">ไม่ระบุเบอร์โทร</span>
+                          )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <td className="p-4">
                           <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              customer.status === "APPROVED"
-                                ? "bg-green-100 text-green-800"
-                                : customer.status === "PENDING"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                              customer.status === 'APPROVED'
+                                ? 'bg-green-100 text-green-700'
+                                : customer.status === 'PENDING'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-red-100 text-red-700'
                             }`}
                           >
-                            {customer.status === "APPROVED"
-                              ? "อนุมัติ"
-                              : customer.status === "PENDING"
-                              ? "รอการอนุมัติ"
-                              : "ปฏิเสธ"}
+                            {customer.status === 'APPROVED' && (
+                              <span className="w-2 h-2 bg-green-500 rounded-full mr-1.5"></span>
+                            )}
+                            {customer.status === 'PENDING' && (
+                              <span className="w-2 h-2 bg-yellow-500 rounded-full mr-1.5"></span>
+                            )}
+                            {customer.status === 'REJECTED' && (
+                              <span className="w-2 h-2 bg-red-500 rounded-full mr-1.5"></span>
+                            )}
+                            {customer.status === 'APPROVED'
+                              ? 'อนุมัติ'
+                              : customer.status === 'PENDING'
+                              ? 'รอการอนุมัติ'
+                              : 'ปฏิเสธ'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {customer.status === "PENDING" && (
-                            <div className="flex space-x-2">
+                        <td className="p-4">
+                          {customer.status === 'PENDING' && (
+                            <div className="flex items-center space-x-3">
                               <button
                                 onClick={() => handleApproveCustomer(customer.id)}
-                                className="text-green-600 hover:text-green-800 flex items-center"
+                                disabled={actionLoading[customer.id]}
+                                className={`text-green-600 hover:text-green-800 transition-colors flex items-center ${
+                                  actionLoading[customer.id] ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
+                                title="อนุมัติ"
                               >
                                 <svg
-                                  className="w-4 h-4 mr-1"
+                                  className="w-5 h-5 mr-1"
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -364,14 +409,18 @@ const CustomerList = () => {
                                     d="M5 13l4 4L19 7"
                                   />
                                 </svg>
-                                อนุมัติ
+                                {actionLoading[customer.id] ? 'กำลังอนุมัติ...' : 'อนุมัติ'}
                               </button>
                               <button
                                 onClick={() => handleRejectCustomer(customer.id)}
-                                className="text-red-600 hover:text-red-800 flex items-center"
+                                disabled={actionLoading[customer.id]}
+                                className={`text-red-600 hover:text-red-800 transition-colors flex items-center ${
+                                  actionLoading[customer.id] ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
+                                title="ปฏิเสธ"
                               >
                                 <svg
-                                  className="w-4 h-4 mr-1"
+                                  className="w-5 h-5 mr-1"
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -384,15 +433,66 @@ const CustomerList = () => {
                                     d="M6 18L18 6M6 6l12 12"
                                   />
                                 </svg>
-                                ปฏิเสธ
+                                {actionLoading[customer.id] ? 'กำลังปฏิเสธ...' : 'ปฏิเสธ'}
                               </button>
                             </div>
                           )}
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="p-8 text-center text-gray-500">
+                        ไม่พบลูกค้าที่ตรงกับคำค้นหา
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {customers.length > 0 && (
+              <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 sm:px-6 flex justify-between items-center">
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={page === 1}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow disabled:opacity-50 hover:bg-indigo-700 transition-colors"
+                  >
+                    ก่อนหน้า
+                  </button>
+                  <span className="text-sm text-gray-700">
+                    หน้า {page} จาก {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={page === totalPages}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow disabled:opacity-50 hover:bg-indigo-700 transition-colors"
+                  >
+                    ถัดไป
+                  </button>
+                </div>
+                <div className="text-sm text-gray-700">
+                  {searchTerm
+                    ? `พบ ${filteredCustomers.length} รายการจาก ${customers.length} รายการ`
+                    : `ทั้งหมด ${customers.length} รายการ`}
+                </div>
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="text-gray-600 text-sm hover:text-gray-900 flex items-center"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    ล้างการค้นหา
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -400,6 +500,4 @@ const CustomerList = () => {
       </div>
     </div>
   );
-};
-
-export default CustomerList;
+}
