@@ -25,6 +25,9 @@ import ProductForm from "./pages/products/productForm";
 import AdminPage from "./pages/admin/index";
 import ProductAdminPage from "./pages/admin/products/productAdmin";
 import CustomerReg from "./pages/customer/customer_reg";
+import PendingApproval from "./pages/customer/PendingApproval";
+import ApproveCustomer from "./pages/customer/ApproveCustomer";
+import CustomerList from "./pages/customer/customer_list";
 
 function Layout({ isOpen, setIsOpen }) {
   return (
@@ -49,8 +52,8 @@ function App() {
       <div className="min-h-screen bg-white">
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/join/:shopId" element={<CustomerReg />} />{" "}
-          {/* เพิ่ม route สำหรับ CustomerReg */}
+          <Route path="/join/:shopId" element={<CustomerReg />} />
+          <Route path="/pending-approval/:customerId" element={<PendingApproval />} />
           <Route element={<Layout isOpen={isOpen} setIsOpen={setIsOpen} />}>
             <Route
               path="/dashboard"
@@ -141,6 +144,14 @@ function App() {
               }
             />
             <Route
+              path="/shopmanage/:shopId/approve-customer"
+              element={
+                <ProtectedRoute>
+                  <ApproveCustomer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/shop/:shopId/employees"
               element={
                 <ProtectedRoute>
@@ -212,6 +223,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+  path="/shop/:shopId/customers"
+  element={
+    <ProtectedRoute>
+      <CustomerList />
+    </ProtectedRoute>
+  }
+/>
           </Route>
           <Route
             path="*"
