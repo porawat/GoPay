@@ -4,6 +4,7 @@ import axios from "axios";
 import { QRCodeCanvas as QRCode } from "qrcode.react";
 import { API_URL, DOMAIN_URL } from "../../config/config";
 import CoreAPI from "../../store/";
+
 import {
   Clock,
   MapPin,
@@ -26,6 +27,7 @@ import {
   Settings,
   AlertCircle,
 } from "lucide-react";
+import CopyButton from "../../components/copybutton";
 
 const ShopConfig = () => {
   const { shopId } = useParams();
@@ -65,9 +67,9 @@ const ShopConfig = () => {
 
     try {
       setLoading(true);
-      const response = await CoreAPI.shopHttpService.getShopById(shopId)
-      console.log(response)
-const {code,datarow} = response;
+      const response = await CoreAPI.shopHttpService.getShopById(shopId);
+      console.log(response);
+      const { code, datarow } = response;
       if (code === 1000) {
         setShopConfig(datarow || {});
         setShopDetails(datarow || {});
@@ -381,18 +383,20 @@ const {code,datarow} = response;
                 <div className="border-t border-gray-200 pt-4 space-y-3">
                   <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-lg">
                     <span className="text-sm font-semibold text-gray-700">
-                      URL:
-                    </span>
-                    <span className="text-sm text-indigo-700 bg-indigo-50 px-3 py-1 rounded-md border border-indigo-100 font-mono">
-                      {qrCodeUrl}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-semibold text-gray-700">
                       Shop ID:
                     </span>
                     <span className="text-sm text-indigo-700 bg-indigo-50 px-3 py-1 rounded-md border border-indigo-100 font-mono">
                       {shopId}
+                    </span>
+                  </div>
+                </div>
+                <div className="border-t border-gray-200 pt-4 space-y-3">
+                  <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-lg">
+                    <span className="block text-sm font-semibold text-gray-700">
+                      URL: <CopyButton textToCopy={qrCodeUrl} />
+                    </span>
+                    <span className="text-sm text-indigo-700 bg-indigo-50 px-3 py-1 rounded-md border border-indigo-100 font-mono">
+                      {qrCodeUrl}
                     </span>
                   </div>
                 </div>
@@ -424,7 +428,7 @@ const {code,datarow} = response;
                   <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       <div className="lg:col-span-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                           <MapPin className="h-5 w-5 text-indigo-500" />
                           ที่อยู่
                         </label>
@@ -440,7 +444,7 @@ const {code,datarow} = response;
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                           <span className="h-5 w-5 bg-blue-100 text-blue-700 rounded flex items-center justify-center font-semibold text-xs">
                             LAT
                           </span>
@@ -458,7 +462,7 @@ const {code,datarow} = response;
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                           <span className="h-5 w-5 bg-indigo-100 text-indigo-700 rounded flex items-center justify-center font-semibold text-xs">
                             LNG
                           </span>
@@ -500,7 +504,7 @@ const {code,datarow} = response;
                   <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                           <Sun className="h-5 w-5 text-amber-500" />
                           เวลาเปิด
                         </label>
@@ -514,7 +518,7 @@ const {code,datarow} = response;
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                           <Moon className="h-5 w-5 text-indigo-500" />
                           เวลาปิด
                         </label>
@@ -746,7 +750,7 @@ const {code,datarow} = response;
                   <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                           <Globe className="h-5 w-5 text-blue-600" />
                           ภาษา
                         </label>
@@ -767,7 +771,7 @@ const {code,datarow} = response;
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                           <DollarSign className="h-5 w-5 text-green-600" />
                           สกุลเงิน
                         </label>
@@ -790,7 +794,7 @@ const {code,datarow} = response;
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                           {shopConfig.theme === "light" ? (
                             <Sun className="h-5 w-5 text-amber-500" />
                           ) : (
