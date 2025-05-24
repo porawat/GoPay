@@ -172,7 +172,7 @@ const CustomerReg = () => {
           <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   <User className="h-5 w-5 text-gray-500" />
                   ชื่อ *
                 </label>
