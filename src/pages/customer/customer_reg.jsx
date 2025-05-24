@@ -1,21 +1,21 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_URL } from "../../config/config";
-import { Store, User, Mail, Phone, MapPin, ArrowLeft } from "lucide-react";
+import { Store, User, Phone, Lock, Mail, ArrowLeft } from "lucide-react";
 import CoreAPI from "../../store";
 
 const CustomerReg = () => {
-  const [searchParams] = useSearchParams();
   const { shopId } = useParams();
+  const navigate = useNavigate();
 
   console.log("shopId ==> ", shopId);
 
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
     phone: "",
-    address: "",
+    password: "",
+    email: "",
   });
   const [shopName, setShopName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -64,38 +64,66 @@ const CustomerReg = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
+
+    // ตรวจสอบชื่อ
     if (!formData.name.trim()) {
       setError("กรุณากรอกชื่อ");
       return;
     }
 
+    // ตรวจสอบเบอร์โทร: ต้องเป็นตัวเลข 10 หลัก
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(formData.phone)) {
+      setError("เบอร์โทรต้องเป็นตัวเลข 10 หลัก");
+      return;
+    }
+
+    // ตรวจสอบรหัสผ่าน: ต้องมีอย่างน้อย 6 ตัวอักษร รวมตัวอักษรและตัวเลข
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+    if (!passwordRegex.test(formData.password)) {
+      setError("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร รวมตัวอักษรและตัวเลข");
+      return;
+    }
+
+    // ตรวจสอบรูปแบบอีเมล (ถ้ามี)
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setError("รูปแบบอีเมลไม่ถูกต้อง");
+      return;
+    }
+
+    const payload = {
+      shop_id: shopId,
+      name: formData.name,
+      phone: formData.phone,
+      password: formData.password,
+      email: formData.email || null,
+      address: null,
+    };
+    console.log("Sending payload to backend:", payload);
+
     try {
       setLoading(true);
-      setError(null);
-      await axios.post(`${API_URL}/customer`, {
-        shop_id: shopId,
-        name: formData.name,
-        email: formData.email || null,
-        phone: formData.phone || null,
-        address: formData.address || null,
-      });
+      const response = await axios.post(`${API_URL}/customer`, payload);
+      console.log("Backend response:", response.data);
       setSuccess(true);
-      setFormData({ name: "", email: "", phone: "", address: "" });
-      setTimeout(() => setSuccess(false), 3000);
+      setTimeout(() => {
+        setSuccess(false);
+        navigate(`/pending-approval/${response.data.data.id}`);
+      }, 2000);
     } catch (error) {
-      console.error(
-        "Error registering customer:",
-        error.response?.data || error.message
-      );
-      let errorMessage = "ไม่สามารถลงทะเบียนได้";
-      if (error.response) {
-        if (error.response.status === 400) {
-          errorMessage = "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง";
-        } else if (error.response.status === 404) {
-          errorMessage = "ไม่พบร้านค้าด้วยรหัสนี้";
-        } else {
-          errorMessage = error.response.data?.message || error.message;
-        }
+      console.error("Error registering customer:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      let errorMessage = "ไม่สามารถลงทะเบียนได้ กรุณาลองใหม่อีกครั้ง";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 404) {
+        errorMessage = "ไม่พบร้านค้าด้วยรหัสนี้";
+      } else if (error.response?.status === 500) {
+        errorMessage = "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์ กรุณาติดต่อผู้ดูแลระบบ";
       }
       setError(errorMessage);
     } finally {
@@ -137,7 +165,7 @@ const CustomerReg = () => {
         )}
         {success && (
           <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg animate-slide-in">
-            <p>ลงทะเบียนสำเร็จ!</p>
+            <p>ลงทะเบียนสำเร็จ! กำลังเปลี่ยนเส้นทาง...</p>
           </div>
         )}
         {!error || shopId ? (
@@ -160,6 +188,36 @@ const CustomerReg = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <Phone className="h-5 w-5 text-gray-500" />
+                  เบอร์โทร *
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  placeholder="กรอกเบอร์โทร (10 หลัก)"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <Lock className="h-5 w-5 text-gray-500" />
+                  รหัสผ่าน *
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  placeholder="กรอกรหัสผ่าน (6 ตัวอักษรขึ้นไป รวมตัวอักษรและตัวเลข)"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   <Mail className="h-5 w-5 text-gray-500" />
                   อีเมล
                 </label>
@@ -170,34 +228,6 @@ const CustomerReg = () => {
                   onChange={handleInputChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                   placeholder="กรอกอีเมล (ถ้ามี)"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <Phone className="h-5 w-5 text-gray-500" />
-                  เบอร์โทร
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                  placeholder="กรอกเบอร์โทร (ถ้ามี)"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-gray-500" />
-                  ที่อยู่
-                </label>
-                <textarea
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                  placeholder="กรอกที่อยู่ (ถ้ามี)"
-                  rows="4"
                 />
               </div>
               <div className="flex justify-end">
