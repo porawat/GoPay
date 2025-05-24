@@ -8,9 +8,6 @@ import CoreAPI from "../../store";
 const CustomerReg = () => {
   const { shopId } = useParams();
   const navigate = useNavigate();
-
-  console.log("shopId ==> ", shopId);
-
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
