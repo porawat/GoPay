@@ -31,7 +31,7 @@ class ProductHttpService extends HTTPCore {
     getproduct(param) {
         let config = this.getHeaders();
         let path = `${API_URL}/product/${param}`;
-        console.log("part ==> " + path)
+
         return this.get(path, config);
     }
     updateProduct(param) {
@@ -40,6 +40,11 @@ class ProductHttpService extends HTTPCore {
         let path = `/productupdate`;
         let fullUrl = url + path;
         return this.post(fullUrl, param, config);
+    }
+    getProductDetail(param) {
+        let config = this.getHeaders();
+        let path = `${API_URL}/product/productDetail`;
+        return this.post(path, param, config);
     }
 }
 
