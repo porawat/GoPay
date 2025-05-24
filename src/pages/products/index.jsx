@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import DataTable from "react-data-table-component";
 import PropTypes from "prop-types"; // ต้องติดตั้งด้วย `npm install prop-types`
 import CoreAPI from "../../store";
-
+import { Button, Flex, Modal } from "antd";
+import ProductForm from "./modal/productEditForm";
+import styled from "styled-components";
 const ProductPage = () => {
   const params = useParams();
   const navigate = useNavigate();
@@ -13,6 +15,10 @@ const ProductPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const shopId = params?.shopId || "";
+  const [editModalOpen, setEditModalOpen] = useState({
+    open: false,
+    product: null,
+  });
 
   const getProducts = async () => {
     setIsLoading(true);
@@ -24,7 +30,8 @@ const ProductPage = () => {
       if (response?.code === 1000) {
         const validProducts = (response?.datarow || []).map((product) => ({
           ...product,
-          product_name: product.product_name || product.name || "ไม่มีชื่อสินค้า",
+          product_name:
+            product.product_name || product.name || "ไม่มีชื่อสินค้า",
         }));
         setProducts(validProducts);
         setFilteredProducts(validProducts);
@@ -41,7 +48,15 @@ const ProductPage = () => {
       setIsLoading(false);
     }
   };
-
+  const handleOk = (e) => {
+    console.log(e);
+    setOpen(false);
+  };
+  const handleCancel = (e) => {
+    // console.log(e);
+    setEditModalOpen({ open: false, product: null });
+    false;
+  };
   useEffect(() => {
     getProducts();
   }, [shopId]);
@@ -119,9 +134,7 @@ const ProductPage = () => {
       name: "การจัดการ",
       cell: (row) => (
         <button
-          onClick={() =>
-            navigate(`/shopmanage/${shopId}/editproduct/${row.product_uid}`)
-          }
+          onClick={() => setEditModalOpen({ open: true, product: row })}
           className="px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
         >
           แก้ไข
@@ -368,6 +381,24 @@ const ProductPage = () => {
           animation: fadeIn 0.3s ease-out;
         }
       `}</style>
+
+      {editModalOpen.open && (
+        <Modal
+          title={false}
+          footer={false}
+          open={editModalOpen.open}
+          onOk={handleOk}
+          onCancel={handleCancel}
+          maskClosable={false}
+          centered // <-- บังคับให้ modal อยู่ตรงกลาง ไม่ลอยขึ้นลง
+          keyboard={false}
+        >
+          <ProductForm
+            productId={editModalOpen.product}
+            onClose={() => setEditModalOpen({ open: false, product: null })}
+          />
+        </Modal>
+      )}
     </div>
   );
 };
@@ -389,3 +420,23 @@ ProductPage.propTypes = {
 };
 
 export default ProductPage;
+
+const ClassificationContainerWrapper = styled.div`
+  position: absolute;
+  border: 1px solid #15181c;
+  border-radius: 8px;
+  right: 10px;
+  z-index: 2000;
+  bottom: 16px;
+  top: 2px;
+  display: flex;
+  background: radial-gradient(
+        396.06% 200.48% at 15.69% 86.61%,
+        rgba(124, 135, 254, 0.49485) 0%,
+        rgba(11, 252, 243, 0.7) 0%,
+        rgba(11, 252, 243, 0) 100%
+      )
+      /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */,
+    linear-gradient(0deg, rgba(12, 25, 57, 0.5), rgba(12, 25, 57, 0.5)),
+    linear-gradient(0deg, rgba(12, 25, 57, 0.2), rgba(12, 25, 57, 0.2));
+`;
