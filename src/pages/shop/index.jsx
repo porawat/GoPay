@@ -1,20 +1,22 @@
-import { useState, useEffect } from 'react';
-import { API_URL } from '../../config/config';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useState, useEffect } from "react";
+import { API_URL } from "../../config/config";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import ImageAvatar from "../../components/Avatar/ImageAvatar";
+import ImageCover from "../../components/Avatar/coverImages";
 
 const ShopPage = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
-  const userId = localStorage.getItem('user_id');
+  const token = localStorage.getItem("token");
+  const userId = localStorage.getItem("user_id");
   const [myshop, setMyshop] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const getmyshop = async () => {
     if (!token || !userId) {
-      setError('กรุณาล็อกอินเพื่อดูร้านค้าของคุณ');
-      navigate('/login');
+      setError("กรุณาล็อกอินเพื่อดูร้านค้าของคุณ");
+      navigate("/login");
       return;
     }
 
@@ -28,24 +30,32 @@ const ShopPage = () => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         }
       );
-      console.log('API Response:', response.data);
+      console.log("API Response:", response.data);
       if (response.data?.code === 1000) {
         setMyshop(response.data?.datarow || []);
       } else {
-        setError('ไม่สามารถดึงข้อมูลร้านค้าได้: ' + (response.data?.message || 'ข้อผิดพลาดไม่ทราบสาเหตุ'));
+        setError(
+          "ไม่สามารถดึงข้อมูลร้านค้าได้: " +
+            (response.data?.message || "ข้อผิดพลาดไม่ทราบสาเหตุ")
+        );
       }
     } catch (error) {
-      console.error('Error fetching shops:', error.response?.data || error.message);
-      const errorMessage = error.response?.status === 401
-        ? 'เซสชันหมดอายุ กรุณาล็อกอินใหม่'
-        : 'เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์: ' + (error.response?.data?.message || error.message);
+      console.error(
+        "Error fetching shops:",
+        error.response?.data || error.message
+      );
+      const errorMessage =
+        error.response?.status === 401
+          ? "เซสชันหมดอายุ กรุณาล็อกอินใหม่"
+          : "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์: " +
+            (error.response?.data?.message || error.message);
       setError(errorMessage);
       if (error.response?.status === 401) {
-        navigate('/login');
+        navigate("/login");
       }
     } finally {
       setIsLoading(false);
@@ -53,11 +63,11 @@ const ShopPage = () => {
   };
 
   const createshop = () => {
-    navigate('/shopcreate');
+    navigate("/shopcreate");
   };
 
   const gotomyshop = (item) => {
-    console.log('Navigating to shop manage:', item);
+    console.log("Navigating to shop manage:", item);
     navigate(`/shopmanage/${item.id}`);
   };
 
@@ -93,7 +103,7 @@ const ShopPage = () => {
                   d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                 />
               </svg>
-              {myshop.length > 0 ? 'เพิ่มร้าน' : 'สร้างร้านของคุณ'}
+              {myshop.length > 0 ? "เพิ่มร้าน" : "สร้างร้านของคุณ"}
             </button>
           </div>
         </div>
@@ -130,12 +140,16 @@ const ShopPage = () => {
                 <div className="flex flex-col items-center">
                   {/* Cover Image */}
                   {item.cover ? (
-                    <img
-                      src={`${API_URL}/files/uploads/${item.cover}`}
-                      alt={`${item.shop_name} cover`}
-                      className="w-full h-32 object-cover rounded-t-lg mb-4"
+                    <ImageCover
+                      name={`${item.shop_name} cover`}
+                      url={`${API_URL}/files/uploads/${item.cover}`}
                     />
                   ) : (
+                    // <img
+                    //   src={`${API_URL}/files/uploads/${item.cover}`}
+                    //   alt={`${item.shop_name} cover`}
+                    //   className="w-full h-32 object-cover rounded-t-lg mb-4"
+                    // />
                     <div className="w-full h-32 bg-gray-200 rounded-t-lg mb-4 flex items-center justify-center">
                       <span className="text-gray-500">ไม่มีภาพปก</span>
                     </div>
@@ -145,14 +159,20 @@ const ShopPage = () => {
                   <div className="relative -mt-12">
                     <div className="w-16 h-16 rounded-full overflow-hidden border-4 border-white">
                       {item.avatar ? (
-                        <img
-                          src={`${API_URL}/files/uploads/${item.avatar}`}
-                          alt={`${item.shop_name} avatar`}
-                          className="w-full h-full object-cover"
+                        <ImageAvatar
+                          name={`${item.shop_name} avatar`}
+                          url={`${API_URL}/files/uploads/${item.avatar}`}
                         />
                       ) : (
+                        // <img
+                        //   src={`${API_URL}/files/uploads/${item.avatar}`}
+                        //   alt={`${item.shop_name} avatar`}
+                        //   className="w-full h-full object-cover"
+                        // />
                         <div className="w-full h-full bg-gray-300 flex items-center justify-center">
-                          <span className="text-gray-500 text-sm">ไม่มีรูป</span>
+                          <span className="text-gray-500 text-sm">
+                            ไม่มีรูป
+                          </span>
                         </div>
                       )}
                     </div>
@@ -161,7 +181,7 @@ const ShopPage = () => {
                   {/* Shop Name */}
                   <div className="mt-4 text-center">
                     <p className="text-xl font-semibold text-gray-900">
-                      {item.shop_name || 'Unnamed Shop'}
+                      {item.shop_name || "Unnamed Shop"}
                     </p>
                   </div>
 
@@ -185,7 +205,9 @@ const ShopPage = () => {
                         </svg>
                         <span>จำนวนลูกค้า</span>
                       </div>
-                      <span className="font-medium">{item.customer_count || '0'}</span>
+                      <span className="font-medium">
+                        {item.customer_count || "0"}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
@@ -205,7 +227,9 @@ const ShopPage = () => {
                         </svg>
                         <span>จำนวนพนักงาน</span>
                       </div>
-                      <span className="font-medium">{item.employee_count || '0'}</span>
+                      <span className="font-medium">
+                        {item.employee_count || "0"}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
@@ -225,23 +249,29 @@ const ShopPage = () => {
                         </svg>
                         <span>สินค้าต้องสั่งเพิ่ม</span>
                       </div>
-                      <span className="font-medium">{item.products_to_reorder || '0'}</span>
+                      <span className="font-medium">
+                        {item.products_to_reorder || "0"}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        ) : !isLoading && (
-          <div className="mb-8 p-6 bg-white rounded-lg shadow-md text-center">
-            <p className="text-gray-600">คุณยังไม่มีร้านค้า เริ่มสร้างร้านค้าของคุณได้เลย!</p>
-            <button
-              onClick={createshop}
-              className="mt-4 btn-primary px-4 py-2"
-            >
-              สร้างร้านค้า
-            </button>
-          </div>
+        ) : (
+          !isLoading && (
+            <div className="mb-8 p-6 bg-white rounded-lg shadow-md text-center">
+              <p className="text-gray-600">
+                คุณยังไม่มีร้านค้า เริ่มสร้างร้านค้าของคุณได้เลย!
+              </p>
+              <button
+                onClick={createshop}
+                className="mt-4 btn-primary px-4 py-2"
+              >
+                สร้างร้านค้า
+              </button>
+            </div>
+          )
         )}
       </div>
     </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { API_URL } from "../../config/config";
+import ImageAvatar from "../../components/Avatar/ImageAvatar";
 
 const ShopManage = () => {
   const navigate = useNavigate();
@@ -247,12 +248,17 @@ const ShopManage = () => {
               title="แก้ไขข้อมูลร้านค้า"
             >
               {shop.avatar ? (
-                <img
-                  src={`${API_URL}/files/uploads/${shop.avatar}`}
-                  alt={`${shop.shop_name} avatar`}
+                <ImageAvatar
+                  url={`${API_URL}/files/uploads/${shop.avatar}`}
+                  name={`${shop.shop_name} avatar`}
                   className="w-full h-full object-cover"
                 />
               ) : (
+                // <img
+                //   src={`${API_URL}/files/uploads/${shop.avatar}`}
+                //   alt={`${shop.shop_name} avatar`}
+                //   className="w-full h-full object-cover"
+                // />
                 <div className="w-full h-full bg-gradient-to-br from-blue-300 to-blue-400 flex items-center justify-center">
                   <span className="text-white text-xl font-bold">
                     {shop.shop_name
