@@ -10,10 +10,15 @@ export default [
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+      parser: '@babel/eslint-parser', // Add this
       parserOptions: {
         ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },
         sourceType: 'module',
+        requireConfigFile: false, // Avoid needing a Babel config
+        babelOptions: {
+          presets: ['@babel/preset-react'], // Support JSX
+        },
       },
     },
     plugins: {
@@ -28,6 +33,7 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
+      'no-irregular-whitespace': 'off', // Allow non-ASCII characters
     },
   },
 ]
