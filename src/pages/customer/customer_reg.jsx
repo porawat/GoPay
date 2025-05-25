@@ -184,7 +184,7 @@ const CustomerReg = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   <Phone className="h-5 w-5 text-gray-500" />
                   เบอร์โทร *
                 </label>
@@ -199,7 +199,7 @@ const CustomerReg = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   <Lock className="h-5 w-5 text-gray-500" />
                   รหัสผ่าน *
                 </label>
@@ -214,7 +214,7 @@ const CustomerReg = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   <Mail className="h-5 w-5 text-gray-500" />
                   อีเมล
                 </label>
