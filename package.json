@@ -30,7 +30,8 @@
     "react-router-dom": "^7.4.0",
     "stats.js": "^0.17.0",
     "styled-components": "^6.1.18",
-    "sweetalert2": "^11.17.2"
+    "sweetalert2": "^11.17.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.27.1",
