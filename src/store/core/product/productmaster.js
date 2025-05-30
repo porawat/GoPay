@@ -25,7 +25,13 @@ class ProductMasterHttpService extends HTTPCore {
         let fullUrl = url + path;
         return this.post(fullUrl, param, config);
     }
-
+    updateproductMaster(param) {
+        let config = this.getHeaders();
+        let url = this.getEnv();
+        let path = `/updateproductmaster`;
+        let fullUrl = url + path;
+        return this.post(fullUrl, param, config);
+    }
     getproductMaster(param) {
         let config = this.getHeaders();
         let path = `${API_URL}/productmaster`;

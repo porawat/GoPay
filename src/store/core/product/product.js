@@ -37,7 +37,7 @@ class ProductHttpService extends HTTPCore {
     updateProduct(param) {
         let config = this.getHeaders();
         let url = this.getEnv();
-        let path = `/productupdate`;
+        let path = `/product/update`;
         let fullUrl = url + path;
         return this.post(fullUrl, param, config);
     }
