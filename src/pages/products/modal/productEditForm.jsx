@@ -10,7 +10,8 @@ import {
 
 import { H1, Text, Text2 } from "../../../components/Typography/index.jsx";
 import CoreAPI from "../../../store/index.js";
-const ProductForm = ({ productId, onClose }) => {
+import { API_URL, TOKEN } from "../../../config/config.js";
+const ProductForm = ({ productId, onClose, onSuccesss }) => {
   // console.log(productId);
 
   const [preview, setPreview] = useState(null);
@@ -22,15 +23,15 @@ const ProductForm = ({ productId, onClose }) => {
     reset,
     formState: { errors },
   } = useForm({ defaultValues: productData });
-
+  const [fileData, setFileData] = useState({
+    productImage: null,
+  });
   const fetchProduct = async () => {
     try {
       const res = await CoreAPI.productHttpService.getProductDetail({
         product_id: productId.product_id,
         shop_id: productId.shop_id,
       });
-
-      console.log(res);
       const { datarow, code } = res;
       if (code === 1000) {
         setProductData({
@@ -42,6 +43,7 @@ const ProductForm = ({ productId, onClose }) => {
           price: datarow.price,
           stock: datarow.stock,
           is_active: datarow.is_active,
+          image_url: datarow.image_url,
         });
         reset({
           product_name: datarow.product_name,
@@ -49,10 +51,11 @@ const ProductForm = ({ productId, onClose }) => {
           price: datarow.price,
           stock: datarow.stock,
           is_active: datarow.is_active,
+          image_url: datarow.image_url,
         });
 
         if (datarow?.image_url) {
-          setPreview(datarow.image_url);
+          setPreview(datarow?.image_url);
         }
       }
     } catch (err) {
@@ -70,32 +73,43 @@ const ProductForm = ({ productId, onClose }) => {
     form.append("price", formData.price);
     form.append("stock", formData.stock);
     form.append("is_active", formData.is_active);
-    if (
-      formData.image &&
-      formData.image.length > 0 &&
-      formData.image[0] instanceof File
-    ) {
-      form.append("image", formData.image[0]);
+    if (fileData.productImage) {
+      form.append("productImage", fileData.productImage);
     }
-
-    formData.product_id = productData.product_id;
-    formData.shop_id = productData.shop_id;
-    formData.product_uid = productData.product_uid;
-    console.log("formData:", formData);
-    // try {
-    //   await axios.put(`/api/products/${productId}`, form, {
-    //     headers: { "Content-Type": "multipart/form-data" },
-    //   });
-    //   alert("อัปเดตสำเร็จ");
-    // } catch (err) {
-    //   console.error("อัปเดตสินค้าไม่สำเร็จ:", err);
-    // }
+    form.append("product_id", productData.product_id);
+    form.append("shop_id", productData.shop_id);
+    form.append("product_uid", productData.product_uid);
+    try {
+      const res = await CoreAPI.productHttpService.updateProduct(form);
+      console.log(res);
+      if (res.code === 1000) {
+        onSuccesss();
+      }
+    } catch (error) {
+      console.error("อัปเดตสินค้าไม่สำเร็จ:", error);
+    }
   };
 
   const handleImagePreview = (e) => {
     const file = e.target.files[0];
     if (file) {
       setPreview(URL.createObjectURL(file));
+    }
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("ไฟล์ใหญ่เกินไป (สูงสุด 5MB)");
+        return;
+      }
+      if (!file.type.startsWith("image/")) {
+        alert("กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น");
+        return;
+      }
+      setFileData((prev) => ({ ...prev, productImage: file }));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(URL.createObjectURL(file));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -194,7 +208,14 @@ const ProductForm = ({ productId, onClose }) => {
             </select>
           </div>
 
-          <div className="text-right">
+          <div className="flex justify-end items-center text-right gap-2">
+            <button
+              onClick={onClose}
+              type="button"
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"

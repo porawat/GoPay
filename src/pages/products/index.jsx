@@ -51,6 +51,7 @@ const ProductPage = () => {
   const handleOk = (e) => {
     console.log(e);
     setOpen(false);
+    getProducts();
   };
   const handleCancel = (e) => {
     // console.log(e);
@@ -396,6 +397,10 @@ const ProductPage = () => {
           <ProductForm
             productId={editModalOpen.product}
             onClose={() => setEditModalOpen({ open: false, product: null })}
+            onSuccesss={() => {
+              getProducts();
+              setEditModalOpen({ open: false, product: null });
+            }}
           />
         </Modal>
       )}
