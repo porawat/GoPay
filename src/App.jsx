@@ -28,7 +28,7 @@ import CustomerReg from "./pages/customer/customer_reg";
 import PendingApproval from "./pages/customer/PendingApproval";
 import ApproveCustomer from "./pages/customer/ApproveCustomer";
 import CustomerList from "./pages/customer/customer_list";
-
+import 'antd/dist/reset.css';
 function Layout({ isOpen, setIsOpen }) {
   return (
     <div className="flex min-h-screen">
