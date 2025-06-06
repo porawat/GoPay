@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import CoreAPI from "../store";
 
 function Settings() {
   const [message, setMessage] = useState("");
@@ -21,23 +22,22 @@ function Settings() {
       navigate("/dashboard"); // Redirect ไป Dashboard ถ้าไม่ใช่ admin
       return;
     }
-
-    axios
-      .get(`${API_URL}/settings`, {
-        headers: { Authorization: token },
-      })
-      .then((response) => setMessage(response.data.message))
-      .catch((err) => {
-        setError(err.response?.data?.message || "Failed to load settings");
-        if (err.response?.status === 401 || err.response?.status === 403) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("role");
-          localStorage.removeItem("username");
-          navigate("/");
-        }
-      });
+    fetchSettings();
   }, [navigate, role]);
-
+  const fetchSettings = async () => {
+    try {
+      const response = await CoreAPI.settingHttpService.getSettings();
+      console.log(response);
+      const { code, message } = response;
+      if (code === 1000) {
+        setMessage(message);
+      } else {
+        setError(message);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <div className="px-4 py-6 sm:px-0">
