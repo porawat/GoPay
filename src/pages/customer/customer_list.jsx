@@ -545,8 +545,8 @@ export default function CustomerList() {
   // Main Render
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+     <div className="flex-1 p-6 bg-gradient-to-b from-blue-50 to-gray-100 min-h-screen w-full">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-full">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center mb-6">
