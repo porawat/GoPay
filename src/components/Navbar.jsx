@@ -1,13 +1,30 @@
+// Sidebar.jsx
 import { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FaStore } from "react-icons/fa6";
+import { jwtDecode } from "jwt-decode";
+
 function Sidebar({ isOpen, setIsOpen }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
-  const role = localStorage.getItem("role");
-  const username = localStorage.getItem("username") || "ผู้ใช้";
   const dropdownRef = useRef(null);
 
+  // ดึงข้อมูลจาก token
+  let role = null;
+  let username = "ผู้ใช้";
+  const token = localStorage.getItem("token");
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      role = decoded.role || null;
+      username = decoded.username || decoded.name || decoded.phone || "ผู้ใช้"; // เพิ่ม decoded.username
+      console.log("Sidebar decoded:", { role, username });
+    } catch (error) {
+      console.error("Invalid token in Sidebar:", error);
+    }
+  }
+
+  // คงโค้ดอื่น ๆ ไว้เหมือนเดิม
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -21,24 +38,20 @@ function Sidebar({ isOpen, setIsOpen }) {
   }, []);
 
   const handleLogout = () => {
-    console.log("Logging out, removing token, role, username");
+    console.log("Logging out, removing token, customerId, user_id, owner");
     localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("username");
-    navigate("/login");
+    localStorage.removeItem("customerId");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("owner");
+    navigate(role === "customer" ? "/customer/login" : "/login");
   };
 
-  const navItems = [
+  const adminNavItems = [
     {
       name: "แดชบอร์ด",
       path: "/dashboard",
       icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -57,17 +70,12 @@ function Sidebar({ isOpen, setIsOpen }) {
       name: "สมาชิก",
       path: "/members",
       icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
-            d="M4 16l4-4m0 0l4 4m-4-4v12m8-12l4 4m-4-4l-4 4m4-4V4"
+            d="M12 4.5v15m7.5-7.5h-15"
           />
         </svg>
       ),
@@ -79,17 +87,45 @@ function Sidebar({ isOpen, setIsOpen }) {
     },
   ];
 
+  const customerNavItems = [
+    {
+      name: "แดชบอร์ด",
+      path: "/customer/dashboard",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "คำสั่งซื้อ",
+      path: "/customer/orders",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M3 3h18v18H3V3zm4 14h10M7 10h10"
+          />
+        </svg>
+      ),
+    },
+  ];
+
+  const navItems = role === "customer" ? customerNavItems : adminNavItems;
+
   const userMenuItems = [
     {
       name: "โปรไฟล์",
-      path: "/profile",
+      path: role === "customer" ? "/customer/profile" : "/profile",
       icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -105,12 +141,7 @@ function Sidebar({ isOpen, setIsOpen }) {
             name: "การตั้งค่า",
             path: "/settings",
             icon: (
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -132,12 +163,7 @@ function Sidebar({ isOpen, setIsOpen }) {
       name: "ออกจากระบบ",
       action: handleLogout,
       icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -155,7 +181,6 @@ function Sidebar({ isOpen, setIsOpen }) {
         isOpen ? "w-64" : "w-20"
       } flex flex-col shadow-2xl z-50`}
     >
-      {/* Logo/Brand */}
       <div className="flex items-center justify-between p-4 border-b border-indigo-500/30">
         {isOpen && (
           <span className="text-xl font-bold tracking-wide">ระบบ GoPay</span>
@@ -165,12 +190,7 @@ function Sidebar({ isOpen, setIsOpen }) {
           className="p-2 rounded-full hover:bg-indigo-700 transition-colors"
         >
           {isOpen ? (
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -179,12 +199,7 @@ function Sidebar({ isOpen, setIsOpen }) {
               />
             </svg>
           ) : (
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -196,7 +211,6 @@ function Sidebar({ isOpen, setIsOpen }) {
         </button>
       </div>
 
-      {/* Navigation Items */}
       <nav className="flex-1 overflow-y-auto py-6">
         {navItems.map((item) => (
           <NavLink
@@ -216,18 +230,12 @@ function Sidebar({ isOpen, setIsOpen }) {
         ))}
       </nav>
 
-      {/* User Menu */}
       <div className="p-4 border-t border-indigo-500/30" ref={dropdownRef}>
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           className="flex items-center w-full px-4 py-2 rounded-lg hover:bg-indigo-700 transition-all duration-200"
         >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

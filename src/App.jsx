@@ -1,3 +1,4 @@
+//app.jsx
 import {
   BrowserRouter as Router,
   Routes,
@@ -28,6 +29,12 @@ import CustomerReg from "./pages/customer/customer_reg";
 import PendingApproval from "./pages/customer/PendingApproval";
 import ApproveCustomer from "./pages/customer/ApproveCustomer";
 import CustomerList from "./pages/customer/customer_list";
+import CustomerLogin from "./pages/customer/CustomerLogin"; // เพิ่ม import
+import CustomerDashboard from "./pages/customer/CustomerDashboard"; // เพิ่ม import
+import CustomerProfile from "./pages/customer/CustomerProfile"; // เพิ่ม import
+import CustomerEditProfile from "./pages/customer/CustomerEditProfile"; // เพิ่ม import
+import CustomerChangePassword from "./pages/customer/CustomerChangePassword"; // เพิ่ม import
+import 'antd/dist/reset.css';
 
 function Layout({ isOpen, setIsOpen }) {
   return (
@@ -52,6 +59,7 @@ function App() {
       <div className="min-h-screen bg-white">
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/customer/login" element={<CustomerLogin />} /> {/* เพิ่ม route */}
           <Route path="/join/:shopId" element={<CustomerReg />} />
           <Route path="/pending-approval/:customerId" element={<PendingApproval />} />
           <Route element={<Layout isOpen={isOpen} setIsOpen={setIsOpen} />}>
@@ -63,6 +71,38 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/customer/dashboard"
+              element={
+                <ProtectedRoute>
+                  <CustomerDashboard />
+                </ProtectedRoute>
+              }
+            /> {/* เพิ่ม route */}
+            <Route
+  path="/customer/profile"
+  element={
+    <ProtectedRoute>
+      <CustomerProfile />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/customer/profile/edit"
+  element={
+    <ProtectedRoute>
+      <CustomerEditProfile />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/customer/change-password"
+  element={
+    <ProtectedRoute>
+      <CustomerChangePassword />
+    </ProtectedRoute>
+  }
+/>
             <Route
               path="/profile"
               element={
@@ -224,13 +264,13 @@ function App() {
               }
             />
             <Route
-  path="/shop/:shopId/customers"
-  element={
-    <ProtectedRoute>
-      <CustomerList />
-    </ProtectedRoute>
-  }
-/>
+              path="/shop/:shopId/customers"
+              element={
+                <ProtectedRoute>
+                  <CustomerList />
+                </ProtectedRoute>
+              }
+            />
           </Route>
           <Route
             path="*"
