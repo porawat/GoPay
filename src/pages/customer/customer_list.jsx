@@ -271,19 +271,12 @@ export default function CustomerList() {
           throw new Error("ไม่พบ token การเข้าสู่ระบบ");
         }
 
-        const response = await axios.post(
-          `${API_URL}/customer/approve/${customer.id}`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            timeout: 15000,
-          }
-        );
-
-        if (response.data?.code === 1000) {
+        const response = await CoreAPI.customerHttpService.customerApprove({
+          id: customer.id,
+          shop_id: shopId,
+        });
+        const { code, message } = response;
+        if (code === 1000) {
           setCustomers((prev) =>
             prev.map((c) =>
               c.id === customer.id ? { ...c, status: "APPROVED" } : c

@@ -54,6 +54,13 @@ class CutomerHttpService extends HTTPCore {
         let config = this.getHeaders();
         return this.get(url, config);
     }
+    customerApprove(param) {
+        let config = this.getHeaders();
+        let url = `${API_URL}/customer/approve`;
+        return this.post(url, param, config);
+
+    }
+
 }
 
 export { CutomerHttpService };
