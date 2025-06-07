@@ -46,39 +46,38 @@ const CustomerReg = () => {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    const fetchShopData = async () => {
-      if (!shopId) {
-        setError("ไม่พบรหัสร้านค้าใน URL");
-        return;
-      }
-      try {
-        setLoading(true);
-        const response = await CoreAPI.shopHttpService.getShopById(shopId);
-        const { datarow, code, message } = response;
-        if (code === 1000) {
-          setShopName(datarow.shop_name || "ร้านค้า");
-        } else {
-          setError("ไม่พบร้านค้า: " + (message || "รหัสร้านค้าไม่ถูกต้อง"));
-        }
-      } catch (error) {
-        console.error(
-          "Error fetching shop data:",
-          error.response?.data || error.message
-        );
-        let errorMessage = "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้";
-        if (error.response?.status === 404) {
-          errorMessage = "ไม่พบร้านค้าด้วยรหัสนี้";
-        } else if (error.response?.status === 401) {
-          errorMessage = "ไม่ได้รับอนุญาตให้เข้าถึงข้อมูลร้านค้า";
-        }
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchShopData();
   }, [shopId]);
-
+  const fetchShopData = async () => {
+    if (!shopId) {
+      setError("ไม่พบรหัสร้านค้าใน URL");
+      return;
+    }
+    try {
+      setLoading(true);
+      const response = await CoreAPI.shopHttpService.getShopById(shopId);
+      const { datarow, code, message } = response;
+      if (code === 1000) {
+        setShopName(datarow.shop_name || "ร้านค้า");
+      } else {
+        setError("ไม่พบร้านค้า: " + (message || "รหัสร้านค้าไม่ถูกต้อง"));
+      }
+    } catch (error) {
+      console.error(
+        "Error fetching shop data:",
+        error.response?.data || error.message
+      );
+      let errorMessage = "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้";
+      if (error.response?.status === 404) {
+        errorMessage = "ไม่พบร้านค้าด้วยรหัสนี้";
+      } else if (error.response?.status === 401) {
+        errorMessage = "ไม่ได้รับอนุญาตให้เข้าถึงข้อมูลร้านค้า";
+      }
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name) {
@@ -91,8 +90,11 @@ const CustomerReg = () => {
     }
     if (!formData.password) {
       newErrors.password = "กรุณากรอกรหัสผ่าน";
-    } else if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/.test(formData.password)) {
-      newErrors.password = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร รวมตัวอักษรและตัวเลข";
+    } else if (
+      !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/.test(formData.password)
+    ) {
+      newErrors.password =
+        "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร รวมตัวอักษรและตัวเลข";
     }
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "รูปแบบอีเมลไม่ถูกต้อง";
@@ -125,7 +127,9 @@ const CustomerReg = () => {
 
     try {
       setLoading(true);
-      const response = await axios.post(`${API_URL}/customer`, payload);
+      const response = await CoreAPI.customerHttpService.createCustomer(
+        payload
+      );
       console.log("Backend response:", response.data);
       setSuccess(true);
       Toast.fire({

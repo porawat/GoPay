@@ -16,10 +16,24 @@ import {
   PhoneOutlined,
   HomeOutlined,
 } from "@ant-design/icons";
-import { Modal, Table, Input, Select, Button, Card, Statistic, Spin, Alert, Badge, Avatar, Tag } from "antd";
+import {
+  Modal,
+  Table,
+  Input,
+  Select,
+  Button,
+  Card,
+  Statistic,
+  Spin,
+  Alert,
+  Badge,
+  Avatar,
+  Tag,
+} from "antd";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { API_URL } from "../../config/config";
+import CoreAPI from "../../store";
 
 // SweetAlert2 Toast Configuration
 const Toast = Swal.mixin({
@@ -173,21 +187,17 @@ export default function CustomerList() {
           params.append("status", statusFilter);
         }
 
-        const response = await axios.get(
-          `${API_URL}/customer/all/${shopId}?${params.toString()}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 15000,
-          }
+        const response = await CoreAPI.customerHttpService.getallCustomer(
+          `${API_URL}/customer/all/${shopId}?${params.toString()}`
         );
 
-        if (response.data?.code === 1000) {
-          const customerData = response.data.data || [];
+        console.log(response);
+        const { code, data, pagination } = response;
+        if (code === 1000) {
+          const customerData = data || [];
           setCustomers(customerData);
-          setTotalPages(response.data.pagination?.totalPages || 1);
-          setTotalCustomers(
-            response.data.pagination?.totalItems || customerData.length
-          );
+          setTotalPages(pagination?.totalPages || 1);
+          setTotalCustomers(pagination?.totalItems || customerData.length);
         } else {
           throw new Error(
             response.data?.message || "ไม่สามารถดึงข้อมูลลูกค้าได้"
@@ -439,7 +449,14 @@ export default function CustomerList() {
 
   // Avatar Color Generator
   const getAvatarColor = (name) => {
-    const colors = ["#1890ff", "#722ed1", "#eb2f96", "#2f54eb", "#13c2c2", "#fa8c16"];
+    const colors = [
+      "#1890ff",
+      "#722ed1",
+      "#eb2f96",
+      "#2f54eb",
+      "#13c2c2",
+      "#fa8c16",
+    ];
     const index = (name?.charCodeAt(0) || 0) % colors.length;
     return colors[index];
   };
@@ -545,7 +562,7 @@ export default function CustomerList() {
   // Main Render
   return (
     <ErrorBoundary>
-     <div className="flex-1 p-6 bg-gradient-to-b from-blue-50 to-gray-100 min-h-screen w-full">
+      <div className="flex-1 p-6 bg-gradient-to-b from-blue-50 to-gray-100 min-h-screen w-full">
         <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-full">
           {/* Header */}
           <div className="mb-8">
@@ -690,7 +707,9 @@ export default function CustomerList() {
                 </span>
                 <Button
                   icon={<RightOutlined />}
-                  onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                  onClick={() =>
+                    setPage((prev) => Math.min(prev + 1, totalPages))
+                  }
                   disabled={page === totalPages}
                   className="rounded-lg"
                 />
@@ -713,13 +732,17 @@ export default function CustomerList() {
                 <div className="flex items-center">
                   <Avatar
                     size={64}
-                    style={{ backgroundColor: getAvatarColor(selectedCustomer.name) }}
+                    style={{
+                      backgroundColor: getAvatarColor(selectedCustomer.name),
+                    }}
                     className="mr-4"
                   >
                     {selectedCustomer.name?.charAt(0).toUpperCase()}
                   </Avatar>
                   <div>
-                    <h3 className="text-xl font-semibold">{selectedCustomer.name}</h3>
+                    <h3 className="text-xl font-semibold">
+                      {selectedCustomer.name}
+                    </h3>
                     {getStatusBadge(selectedCustomer.status)}
                   </div>
                 </div>
@@ -764,7 +787,9 @@ export default function CustomerList() {
                           setShowModal(false);
                           handleApproveCustomer(selectedCustomer);
                         }}
-                        loading={actionLoading[selectedCustomer.id] === "approving"}
+                        loading={
+                          actionLoading[selectedCustomer.id] === "approving"
+                        }
                         className="rounded-lg"
                       >
                         อนุมัติ
@@ -775,7 +800,9 @@ export default function CustomerList() {
                           setShowModal(false);
                           handleRejectCustomer(selectedCustomer);
                         }}
-                        loading={actionLoading[selectedCustomer.id] === "rejecting"}
+                        loading={
+                          actionLoading[selectedCustomer.id] === "rejecting"
+                        }
                         className="rounded-lg"
                       >
                         ปฏิเสธ
