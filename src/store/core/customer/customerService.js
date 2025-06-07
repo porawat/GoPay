@@ -50,6 +50,10 @@ class CutomerHttpService extends HTTPCore {
         console.log("part ==> " + path)
         return this.get(path, config);
     }
+    getallCustomer(url) {
+        let config = this.getHeaders();
+        return this.get(url, config);
+    }
 }
 
 export { CutomerHttpService };
