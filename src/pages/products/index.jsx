@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import DataTable from "react-data-table-component";
-import PropTypes from "prop-types"; // ต้องติดตั้งด้วย `npm install prop-types`
+import PropTypes from "prop-types";
 import CoreAPI from "../../store";
-import { Button, Flex, Modal } from "antd";
+import { Modal } from "antd";
 import ProductForm from "./modal/productEditForm";
-import styled from "styled-components";
+
 const ProductPage = () => {
   const params = useParams();
   const navigate = useNavigate();
@@ -14,11 +13,57 @@ const ProductPage = () => {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedWarehouse, setSelectedWarehouse] = useState("all");
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const [expandedWarehouses, setExpandedWarehouses] = useState({});
   const shopId = params?.shopId || "";
   const [editModalOpen, setEditModalOpen] = useState({
     open: false,
     product: null,
   });
+
+  // Mock data for warehouses and categories - replace with real API data
+  const warehouses = [
+    { id: "wh1", name: "คลังสินค้าหลัก", location: "กรุงเทพ", count: 150 },
+    { id: "wh2", name: "คลังสินค้าภาคเหนือ", location: "เชียงใหม่", count: 75 },
+    { id: "wh3", name: "คลังสินค้าภาคใต้", location: "ภูเก็ต", count: 50 },
+  ];
+
+  const categories = [
+    { 
+      id: "electronics", 
+      name: "อิเล็กทรอนิกส์", 
+      count: 45,
+      subcategories: [
+        { id: "mobile", name: "มือถือ", count: 25 },
+        { id: "laptop", name: "คอมพิวเตอร์", count: 15 },
+        { id: "accessories", name: "อุปกรณ์เสริม", count: 5 },
+      ]
+    },
+    { 
+      id: "fashion", 
+      name: "เสื้อผ้าแฟชั่น", 
+      count: 80,
+      subcategories: [
+        { id: "men", name: "เสื้อผ้าผู้ชาย", count: 30 },
+        { id: "women", name: "เสื้อผ้าผู้หญิง", count: 40 },
+        { id: "shoes", name: "รองเท้า", count: 10 },
+      ]
+    },
+    { 
+      id: "home", 
+      name: "ของใช้ในบ้าน", 
+      count: 35,
+      subcategories: [
+        { id: "furniture", name: "เฟอร์นิเจอร์", count: 15 },
+        { id: "kitchen", name: "ห้องครัว", count: 20 },
+      ]
+    },
+  ];
 
   const getProducts = async () => {
     setIsLoading(true);
@@ -48,400 +93,575 @@ const ProductPage = () => {
       setIsLoading(false);
     }
   };
+
   const handleOk = (e) => {
     console.log(e);
-    setOpen(false);
+    setEditModalOpen({ open: false, product: null });
     getProducts();
   };
+
   const handleCancel = (e) => {
-    // console.log(e);
     setEditModalOpen({ open: false, product: null });
-    false;
   };
+
   useEffect(() => {
     getProducts();
   }, [shopId]);
 
-  // ฟังก์ชันค้นหา
+  // ฟังก์ชันค้นหาและกรอง
   useEffect(() => {
-    const filtered = products.filter((product) => {
+    let filtered = products.filter((product) => {
       const productName = product.product_name || product.name || "";
-      return productName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = productName.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Add category and warehouse filtering logic here when you have the data
+      const matchesCategory = selectedCategory === "all" || true; // Replace with actual category check
+      const matchesWarehouse = selectedWarehouse === "all" || true; // Replace with actual warehouse check
+      
+      return matchesSearch && matchesCategory && matchesWarehouse;
     });
+    
     setFilteredProducts(filtered);
-  }, [searchTerm, products]);
+    setCurrentPage(1);
+  }, [searchTerm, products, selectedCategory, selectedWarehouse]);
 
-  // กำหนดคอลัมน์สำหรับ DataTable
-  const columns = [
-    {
-      name: "ชื่อสินค้า",
-      selector: (row) => row.product_name,
-      sortable: true,
-      wrap: true,
-      cell: (row) => (
-        <span className="font-medium text-gray-800">{row.product_name}</span>
-      ),
-    },
-    {
-      name: "คำอธิบาย",
-      selector: (row) => row.description || "-",
-      sortable: true,
-      wrap: true,
-      cell: (row) => (
-        <span className="text-gray-600">{row.description || "-"}</span>
-      ),
-    },
-    {
-      name: "ราคา (บาท)",
-      selector: (row) => row.price,
-      sortable: true,
-      cell: (row) => (
-        <span className="text-indigo-600 font-medium">
-          {Number(row.price).toFixed(2)}
-        </span>
-      ),
-    },
-    {
-      name: "สต็อก",
-      selector: (row) => row.stock,
-      sortable: true,
-      cell: (row) => (
-        <span
-          className={`font-medium ${
-            row.stock > 0 ? "text-green-600" : "text-red-600"
-          }`}
-        >
-          {row.stock}
-        </span>
-      ),
-    },
-    {
-      name: "สถานะ",
-      selector: (row) => row.is_active,
-      sortable: true,
-      cell: (row) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            row.is_active === "ACTIVE"
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {row.is_active === "ACTIVE" ? "ใช้งาน" : "ไม่ใช้งาน"}
-        </span>
-      ),
-    },
-    {
-      name: "การจัดการ",
-      cell: (row) => (
-        <button
-          onClick={() => setEditModalOpen({ open: true, product: row })}
-          className="px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
-        >
-          แก้ไข
-        </button>
-      ),
-      ignoreRowClick: true,
-      allowOverflow: true,
-      button: true,
-    },
-  ];
+  // Pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
-  // Custom styles สำหรับ DataTable
-  const customStyles = {
-    table: {
-      style: {
-        backgroundColor: "white",
-        borderRadius: "0.5rem",
-        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-      },
-    },
-    headCells: {
-      style: {
-        backgroundColor: "#f3f4f6",
-        fontSize: "0.875rem",
-        fontWeight: "600",
-        color: "#1f2937",
-        padding: "1rem",
-      },
-    },
-    cells: {
-      style: {
-        padding: "1rem",
-        fontSize: "0.875rem",
-        color: "#374151",
-      },
-    },
-    pagination: {
-      style: {
-        borderTop: "1px solid #e5e7eb",
-        padding: "0.5rem",
-      },
-    },
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedProducts(currentItems.map(item => item.id || item.product_id));
+    } else {
+      setSelectedProducts([]);
+    }
+  };
+
+  const handleSelectProduct = (productId) => {
+    setSelectedProducts(prev => {
+      if (prev.includes(productId)) {
+        return prev.filter(id => id !== productId);
+      } else {
+        return [...prev, productId];
+      }
+    });
+  };
+
+  const toggleCategoryExpand = (categoryId) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }));
+  };
+
+  const toggleWarehouseExpand = (warehouseId) => {
+    setExpandedWarehouses(prev => ({
+      ...prev,
+      [warehouseId]: !prev[warehouseId]
+    }));
+  };
+
+  const StatusBadge = ({ status }) => {
+    const isActive = status === "ACTIVE";
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+        isActive 
+          ? 'bg-green-100 text-green-800 border border-green-200' 
+          : 'bg-red-100 text-red-800 border border-red-200'
+      }`}>
+        <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+          isActive ? 'bg-green-500' : 'bg-red-500'
+        }`}></div>
+        {isActive ? 'ใช้งาน' : 'ไม่ใช้งาน'}
+      </span>
+    );
+  };
+
+  const StockIndicator = ({ stock }) => {
+    let colorClass = 'text-green-600';
+    if (stock === 0) colorClass = 'text-red-600';
+    else if (stock < 10) colorClass = 'text-yellow-600';
+    
+    return (
+      <span className={`font-medium ${colorClass}`}>{stock}</span>
+    );
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 py-8 px-4">
-      <div className="w-full max-w-7xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-blue-700 px-6 py-6 relative">
-          <button
-            onClick={() => navigate(`/shopmanage/${shopId}`)}
-            className="absolute top-6 left-6 md:hidden p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
-            aria-label="กลับ"
-          >
-            <svg
-              className="h-5 w-5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-center md:text-left">
-              <h2 className="text-2xl md:text-3xl font-bold text-white">
-                รายการสินค้า
-              </h2>
-              <p className="text-indigo-100 mt-2 text-sm">
-                จัดการสินค้าทั้งหมดในร้านของคุณ
-              </p>
-            </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
             <button
-              onClick={() => navigate(`/shopmanage/${shopId}/addproduct`)}
-              className="mt-4 md:mt-0 px-6 py-2 bg-white text-indigo-600 rounded-lg hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors flex items-center"
+              onClick={() => navigate(`/shopmanage/${shopId}`)}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <svg
-                className="h-5 w-5 mr-2"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                  clipRule="evenodd"
-                />
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              เพิ่มสินค้า
             </button>
+            <h2 className="text-lg font-semibold text-gray-900">จัดการสินค้า</h2>
+            <div></div>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="flex flex-col items-center">
-                <svg
-                  className="animate-spin h-8 w-8 text-indigo-600"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
+        {/* Sidebar Content */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Warehouses Section */}
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-900 flex items-center">
+                <svg className="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
-                <p className="mt-2 text-gray-600">กำลังโหลดข้อมูล...</p>
+                คลังสินค้า
+              </h3>
+            </div>
+            
+            <div className="space-y-1">
+              <button
+                onClick={() => setSelectedWarehouse("all")}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                  selectedWarehouse === "all" 
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>ทั้งหมด</span>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                    {warehouses.reduce((sum, wh) => sum + wh.count, 0)}
+                  </span>
+                </div>
+              </button>
+              
+              {warehouses.map((warehouse) => (
+                <div key={warehouse.id}>
+                  <button
+                    onClick={() => setSelectedWarehouse(warehouse.id)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      selectedWarehouse === warehouse.id 
+                        ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">{warehouse.name}</div>
+                        <div className="text-xs text-gray-500">{warehouse.location}</div>
+                      </div>
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                        {warehouse.count}
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Categories Section */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-900 flex items-center">
+                <svg className="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                หมวดสินค้า
+              </h3>
+            </div>
+
+            <div className="space-y-1">
+              <button
+                onClick={() => setSelectedCategory("all")}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                  selectedCategory === "all" 
+                    ? 'bg-green-50 text-green-700 border border-green-200' 
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>ทั้งหมด</span>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                    {categories.reduce((sum, cat) => sum + cat.count, 0)}
+                  </span>
+                </div>
+              </button>
+
+              {categories.map((category) => (
+                <div key={category.id}>
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => toggleCategoryExpand(category.id)}
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <svg 
+                        className={`w-3 h-3 text-gray-400 transition-transform ${
+                          expandedCategories[category.id] ? 'rotate-90' : ''
+                        }`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={`flex-1 text-left px-2 py-2 rounded-lg text-sm transition-colors ${
+                        selectedCategory === category.id 
+                          ? 'bg-green-50 text-green-700 border border-green-200' 
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">{category.name}</span>
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                          {category.count}
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Subcategories */}
+                  {expandedCategories[category.id] && (
+                    <div className="ml-6 mt-1 space-y-1">
+                      {category.subcategories.map((subcategory) => (
+                        <button
+                          key={subcategory.id}
+                          onClick={() => setSelectedCategory(subcategory.id)}
+                          className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                            selectedCategory === subcategory.id 
+                              ? 'bg-green-50 text-green-700 border border-green-200' 
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{subcategory.name}</span>
+                            <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                              {subcategory.count}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">รายการสินค้า</h1>
+                <p className="text-sm text-gray-500">{filteredProducts.length} รายการ</p>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <button className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  ตัวกรอง
+                </button>
+                
+                <button
+                  onClick={() => navigate(`/shopmanage/${shopId}/addproduct`)}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  เพิ่มสินค้า
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 p-6">
+          {/* Search and Actions */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="relative flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="ค้นหาสินค้า..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              />
+            </div>
+            
+            {selectedProducts.length > 0 && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">{selectedProducts.length} รายการที่เลือก</span>
+                <button className="px-3 py-1.5 text-sm bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors">
+                  ลบที่เลือก
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Product List */}
+          {isLoading ? (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="flex justify-center items-center h-64">
+                <div className="flex flex-col items-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <p className="mt-4 text-gray-600">กำลังโหลดข้อมูล...</p>
+                </div>
               </div>
             </div>
           ) : error ? (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-center animate-fadeIn">
-              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-red-100 flex items-center justify-center mr-4">
-                <svg
-                  className="h-6 w-6 text-red-600"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium">เกิดข้อผิดพลาด</p>
-                <p className="text-sm text-red-600">{error}</p>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <h3 className="mt-4 text-lg font-medium text-gray-900">เกิดข้อผิดพลาด</h3>
+                  <p className="mt-2 text-sm text-gray-500">{error}</p>
+                  <button 
+                    onClick={() => getProducts()}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    ลองใหม่
+                  </button>
+                </div>
               </div>
             </div>
           ) : products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <svg
-                className="h-16 w-16 text-gray-400 mb-4"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 2a8 8 0 100 16 8 8 0 000-16zM7 9a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm0 3a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <h2 className="text-xl font-bold text-gray-800 mb-2">
-                ไม่พบสินค้า
-              </h2>
-              <p className="text-gray-600 mb-4">
-                กรุณาเพิ่มสินค้าใหม่สำหรับร้านของคุณ
-              </p>
-              <button
-                onClick={() => navigate(`/shopmanage/${shopId}/addproduct`)}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors flex items-center"
-              >
-                <svg
-                  className="h-5 w-5 mr-2"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="flex flex-col items-center justify-center h-64 text-center p-6">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100">
+                  <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M9 1L9 3" />
+                  </svg>
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-gray-900">ไม่มีสินค้า</h3>
+                <p className="mt-2 text-sm text-gray-500 max-w-sm">
+                  เริ่มต้นสร้างแคตตาล็อกสินค้าของคุณโดยเพิ่มสินค้าแรก
+                </p>
+                <button
+                  onClick={() => navigate(`/shopmanage/${shopId}/addproduct`)}
+                  className="mt-6 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                เพิ่มสินค้า
-              </button>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  เพิ่มสินค้าแรก
+                </button>
+              </div>
             </div>
           ) : (
-            <div>
-              {/* Search Bar */}
-              <div className="mb-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="relative w-full sm:w-80">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg
-                      className="h-5 w-5 text-gray-400"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              {/* Table Header */}
+              <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
+                <div className="flex items-center">
                   <input
-                    type="text"
-                    placeholder="ค้นหาสินค้าตามชื่อ..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 py-3 px-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors shadow-sm"
+                    type="checkbox"
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    onChange={handleSelectAll}
+                    checked={selectedProducts.length === currentItems.length && currentItems.length > 0}
                   />
+                  <div className="ml-6 grid grid-cols-12 gap-4 flex-1 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="col-span-4">สินค้า</div>
+                    <div className="col-span-2">ราคา</div>
+                    <div className="col-span-2">สต็อก</div>
+                    <div className="col-span-2">สถานะ</div>
+                    <div className="col-span-2 text-right">การจัดการ</div>
+                  </div>
                 </div>
               </div>
 
-              {/* DataTable */}
-              <DataTable
-                columns={columns}
-                data={filteredProducts}
-                pagination
-                paginationPerPage={10}
-                paginationRowsPerPageOptions={[10, 25, 50]}
-                customStyles={customStyles}
-                noDataComponent={
-                  <div className="py-8 text-center text-gray-600">
-                    ไม่พบสินค้าที่ตรงกับคำค้นหา
+              {/* Table Body */}
+              <div className="divide-y divide-gray-200">
+                {currentItems.map((product) => (
+                  <div key={product.id || product.product_id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        checked={selectedProducts.includes(product.id || product.product_id)}
+                        onChange={() => handleSelectProduct(product.id || product.product_id)}
+                      />
+                      <div className="ml-6 grid grid-cols-12 gap-4 flex-1 items-center">
+                        {/* Product Info */}
+                        <div className="col-span-4">
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+                              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M9 1L9 3" />
+                              </svg>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {product.product_name}
+                              </p>
+                              <p className="text-sm text-gray-500 truncate">
+                                {product.description || '-'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Price */}
+                        <div className="col-span-2">
+                          <span className="text-sm font-medium text-gray-900">
+                            ฿{Number(product.price || 0).toLocaleString()}
+                          </span>
+                        </div>
+
+                        {/* Stock */}
+                        <div className="col-span-2">
+                          <StockIndicator stock={product.stock || 0} />
+                        </div>
+
+                        {/* Status */}
+                        <div className="col-span-2">
+                          <StatusBadge status={product.is_active} />
+                        </div>
+
+                        {/* Actions */}
+                        <div className="col-span-2 text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => setEditModalOpen({ open: true, product: product })}
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+                            >
+                              แก้ไข
+                            </button>
+                            <button className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 6a1 1 0 110-2 1 1 0 010 2zm0 6a1 1 0 110-2 1 1 0 010 2z" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                }
-                highlightOnHover
-                pointerOnHover
-                responsive
-              />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="bg-gray-50 border-t border-gray-200 px-6 py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-700">
+                      แสดง {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredProducts.length)} จาก {filteredProducts.length} รายการ
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                      >
+                        ก่อนหน้า
+                      </button>
+                      
+                      {/* Page Numbers */}
+                      <div className="flex items-center space-x-1">
+                        {[...Array(totalPages)].map((_, index) => {
+                          const page = index + 1;
+                          if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
+                            return (
+                              <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                                  currentPage === page
+                                    ? 'bg-blue-600 text-white'
+                                    : 'border border-gray-300 hover:bg-gray-50'
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            );
+                          } else if (page === currentPage - 2 || page === currentPage + 2) {
+                            return <span key={page} className="text-gray-400">...</span>;
+                          }
+                          return null;
+                        })}
+                      </div>
+                      
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                      >
+                        ถัดไป
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Custom Animation Styles */}
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
+      {/* Edit Modal */}
+      <Modal
+        title={
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            แก้ไขข้อมูลสินค้า
+          </div>
         }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
-        }
-      `}</style>
-
-      {editModalOpen.open && (
-        <Modal
-          title={false}
-          footer={false}
-          open={editModalOpen.open}
-          onOk={handleOk}
-          onCancel={handleCancel}
-          maskClosable={false}
-          centered // <-- บังคับให้ modal อยู่ตรงกลาง ไม่ลอยขึ้นลง
-          keyboard={false}
-        >
+        open={editModalOpen.open}
+        onOk={handleOk}
+        onCancel={handleCancel}
+        width={800}
+        footer={null}
+        maskClosable={false}
+        destroyOnClose={true}
+        className="edit-product-modal"
+      >
+        {editModalOpen.product && (
           <ProductForm
-            productId={editModalOpen.product}
-            onClose={() => setEditModalOpen({ open: false, product: null })}
-            onSuccesss={() => {
-              getProducts();
-              setEditModalOpen({ open: false, product: null });
-            }}
+            product={editModalOpen.product}
+            shopId={shopId}
+            onSuccess={handleOk}
+            onCancel={handleCancel}
           />
-        </Modal>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };
 
-// ลบส่วนนี้หากไม่ต้องการใช้ PropTypes หรือยังไม่ได้ติดตั้ง prop-types
-ProductPage.propTypes = {
-  products: PropTypes.arrayOf(
-    PropTypes.shape({
-      product_uid: PropTypes.string,
-      product_id: PropTypes.string,
-      product_name: PropTypes.string,
-      name: PropTypes.string, // รองรับกรณี API ส่ง name
-      price: PropTypes.number,
-      stock: PropTypes.number,
-      is_active: PropTypes.string,
-      description: PropTypes.string,
-    })
-  ),
+// PropTypes สำหรับ StatusBadge และ StockIndicator components
+ProductPage.StatusBadge = StatusBadge;
+ProductPage.StockIndicator = StockIndicator;
+
+StatusBadge.propTypes = {
+  status: PropTypes.string.isRequired,
+};
+
+StockIndicator.propTypes = {
+  stock: PropTypes.number.isRequired,
 };
 
 export default ProductPage;
-
-const ClassificationContainerWrapper = styled.div`
-  position: absolute;
-  border: 1px solid #15181c;
-  border-radius: 8px;
-  right: 10px;
-  z-index: 2000;
-  bottom: 16px;
-  top: 2px;
-  display: flex;
-  background: radial-gradient(
-        396.06% 200.48% at 15.69% 86.61%,
-        rgba(124, 135, 254, 0.49485) 0%,
-        rgba(11, 252, 243, 0.7) 0%,
-        rgba(11, 252, 243, 0) 100%
-      )
-      /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */,
-    linear-gradient(0deg, rgba(12, 25, 57, 0.5), rgba(12, 25, 57, 0.5)),
-    linear-gradient(0deg, rgba(12, 25, 57, 0.2), rgba(12, 25, 57, 0.2));
-`;
