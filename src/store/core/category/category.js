@@ -25,6 +25,7 @@ class CategoryHttpService extends HTTPCore {
         console.log(config, path)
         return this.get(path, config);
     }
+
 }
 
 export { CategoryHttpService };

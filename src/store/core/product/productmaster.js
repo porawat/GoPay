@@ -38,6 +38,11 @@ class ProductMasterHttpService extends HTTPCore {
         console.log(config, path)
         return this.get(path, config);
     }
+    getproductMasterByid(param) {
+        let config = this.getHeaders();
+        let path = `${API_URL}/productmaster/productsbycategory/${param}`;
+        return this.get(path, config);
+    }
 }
 
 export { ProductMasterHttpService };
