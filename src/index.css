@@ -21,6 +21,29 @@
   button, input, select, textarea {
     @apply focus:outline-none;
   }
+
+  /* Force Sarabun font for Ant Design components in Sidebar */
+  .sidebar,
+  .sidebar * {
+    font-family: 'Sarabun', sans-serif !important;
+  }
+
+  /* Ensure Ant Design Menu items use Sarabun */
+  .ant-menu,
+  .ant-menu-item,
+  .ant-menu-submenu,
+  .ant-menu-item a,
+  .ant-dropdown-menu,
+  .ant-dropdown-menu-item {
+    font-family: 'Sarabun', sans-serif !important;
+  }
+
+  /* Ensure buttons and text elements in Sidebar use Sarabun */
+  .sidebar .ant-btn,
+  .sidebar .anticon,
+  .sidebar .text-white {
+    font-family: 'Sarabun', sans-serif !important;
+  }
 }
 
 @layer components {

@@ -134,19 +134,20 @@ function Sidebar({ isOpen, setIsOpen }) {
         ),
         onClick: item.onClick,
       }))}
-      style={{ minWidth: 150 }}
+      style={{ minWidth: 150, fontFamily: "'Sarabun', sans-serif" }}
     />
   );
 
   return (
     <Sider
       width={isOpen ? 256 : 80}
-      className="fixed h-screen z-50"
+      className="fixed h-screen z-50 sidebar"
       style={{
         background: "linear-gradient(180deg, #4F46E5, #9333EA)",
         color: "white",
         transition: "width 0.3s ease-in-out",
         overflowY: "auto",
+        fontFamily: "'Sarabun', sans-serif",
       }}
       collapsed={!isOpen}
     >
@@ -176,6 +177,7 @@ function Sidebar({ isOpen, setIsOpen }) {
           background: "transparent",
           color: "white",
           borderRight: "none",
+          fontFamily: "'Sarabun', sans-serif",
         }}
         selectedKeys={navItems
           .filter((item) => window.location.pathname === item.path)
@@ -192,7 +194,10 @@ function Sidebar({ isOpen, setIsOpen }) {
       />
 
       {/* User Section */}
-      <div className="absolute bottom-0 w-full p-4 border-t" style={{ borderColor: "rgba(99, 102, 241, 0.3)" }}>
+      <div
+        className="absolute bottom-0 w-full p-4 border-t"
+        style={{ borderColor: "rgba(99, 102, 241, 0.3)" }}
+      >
         <Dropdown overlay={userMenu} trigger={["click"]}>
           <div className="flex items-center cursor-pointer">
             <Avatar
