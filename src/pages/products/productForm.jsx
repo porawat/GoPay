@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import CoreAPI from "../../store";
-
+import { useParams } from "react-router-dom";
 const StatusBadge = ({ status }) => {
   const isActive = status === "ACTIVE";
   return (
@@ -30,17 +30,20 @@ const StockIndicator = ({ stock }) => {
 };
 
 const ProductManagementUI = () => {
+  const { shopId } = useParams();
   const [categories, setCategoryList] = useState([]);
   const [masterProducts, setMasterProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedProducts, setSelectedProducts] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
   const getCategorys = async () => {
     try {
       const res = await CoreAPI.categoryHttpService.getCategory();
-      console.log(res);
+
       const { data, code } = res;
       if (code === 1000) {
         const categoriesWithCount = data.map((category) => ({
@@ -50,7 +53,7 @@ const ProductManagementUI = () => {
         setCategoryList(categoriesWithCount);
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
   const getprodoctMaster = async () => {
@@ -58,7 +61,6 @@ const ProductManagementUI = () => {
       const res = await CoreAPI.productMasterHttpService.getproductMasterByid(
         selectedCategory
       );
-      console.log(res);
       const { data, code } = res;
       if (code === 1000) {
         setMasterProducts(data);
@@ -95,19 +97,26 @@ const ProductManagementUI = () => {
   });
 
   const handleProductSelect = (product) => {
-    const isAlreadySelected = selectedProducts.some(
-      (p) => p.product_id === product.product_id
-    );
-    if (!isAlreadySelected) {
-      const newProduct = {
-        ...product,
-        tempId: Date.now(),
-        price: product.selling_price,
-        editStock: 0,
-        sellerId: "",
-      };
-      setSelectedProducts((prev) => [...prev, newProduct]);
-    }
+    setSelectedProducts((prev) => {
+      // Check if product is already selected
+      const isSelected = prev.some((p) => p.product_id === product.product_id);
+
+      if (isSelected) {
+        // Remove product if already selected
+        return prev.filter((p) => p.product_id !== product.product_id);
+      } else {
+        // Add product if not selected
+        const newProduct = {
+          ...product,
+          tempId: Date.now(),
+          price: product.selling_price,
+          editStock: 0,
+          sellerId: "",
+          shop_id: shopId,
+        };
+        return [...prev, newProduct];
+      }
+    });
   };
 
   const handlePriceChange = (tempId, newPrice) => {
@@ -144,20 +153,80 @@ const ProductManagementUI = () => {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedProducts(
-        currentItems.map((item) => ({
+      // Select all current visible items that aren't already selected
+      const newSelectedProducts = currentItems
+        .filter(
+          (item) =>
+            !selectedProducts.some((p) => p.product_id === item.product_id)
+        )
+        .map((item) => ({
           ...item,
           tempId: Date.now() + item.product_id,
-          price: item.selling_price,
+          price: item.selling_price || 0,
           editStock: 0,
           sellerId: "",
-        }))
-      );
+        }));
+
+      setSelectedProducts((prev) => [...prev, ...newSelectedProducts]);
     } else {
-      setSelectedProducts([]);
+      // Unselect only current visible items
+      setSelectedProducts((prev) =>
+        prev.filter(
+          (item) =>
+            !currentItems.some(
+              (current) => current.product_id === item.product_id
+            )
+        )
+      );
     }
   };
 
+  const addProduct = async () => {
+    console.log("Click");
+
+    // setIsSubmitting(true);
+
+    // Validate required fields
+    const invalidProducts = selectedProducts.filter(
+      (product) => !product.price || !product.editStock
+    );
+
+    if (invalidProducts.length > 0) {
+      console.error("กรุณากรอกข้อมูลให้ครบถ้วน (ราคา, จำนวน, ผู้ขาย)");
+      return;
+    }
+
+    const products = selectedProducts.map((product) => ({
+      product_id: product.product_id,
+      shop_id: shopId,
+      price: parseFloat(product.price),
+      stock: parseInt(product.editStock),
+      product_name: product.name,
+      description: product.description || "",
+      image_url: product.image_url,
+      is_active: "ACTIVE",
+    }));
+    console.log(products);
+
+    try {
+      const response = await CoreAPI.productHttpService.createProduct({
+        products,
+      });
+      console.log(response);
+      if (response.code === 1000) {
+        // message.success("เพิ่มสินค้าสำเร็จ");
+        setSelectedProducts([]);
+        getprodoctMaster(); // Refresh product list
+      } else {
+        throw new Error(response.message || "เกิดข้อผิดพลาดในการเพิ่มสินค้า");
+      }
+    } catch (error) {
+      console.error("Error adding products:", error);
+      // message.error(error.message || "เกิดข้อผิดพลาดในการเพิ่มสินค้า");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -352,11 +421,16 @@ const ProductManagementUI = () => {
                 <input
                   type="checkbox"
                   className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  onChange={handleSelectAll}
                   checked={
-                    selectedProducts.length === currentItems.length &&
-                    currentItems.length > 0
+                    currentItems.length > 0 &&
+                    currentItems.every((item) =>
+                      selectedProducts.some(
+                        (p) => p.product_id === item.product_id
+                      )
+                    )
                   }
+                  onChange={handleSelectAll}
+                  onClick={(e) => e.stopPropagation()}
                 />
                 <div className="ml-6 grid grid-cols-12 gap-4 flex-1 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <div className="col-span-4">สินค้า</div>
@@ -410,6 +484,7 @@ const ProductManagementUI = () => {
                           e.stopPropagation();
                           handleProductSelect(product);
                         }}
+                        onClick={(e) => e.stopPropagation()}
                       />
                       <div className="ml-6 grid grid-cols-12 gap-4 flex-1 items-center">
                         <div className="col-span-4">
@@ -647,8 +722,16 @@ const ProductManagementUI = () => {
                   >
                     ยกเลิก
                   </button>
-                  <button className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                    บันทึกสินค้า
+                  <button
+                    onClick={addProduct}
+                    disabled={isSubmitting}
+                    className={`px-4 py-2 text-sm ${
+                      isSubmitting
+                        ? "bg-blue-400 cursor-not-allowed"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    } text-white rounded-md transition-colors`}
+                  >
+                    {isSubmitting ? "กำลังบันทึก..." : "บันทึกสินค้า"}
                   </button>
                 </div>
               </div>
