@@ -14,7 +14,7 @@ class ProductHttpService extends HTTPCore {
         return {
             headers: {
                 Authorization: `Bearer ${this.getToken()}`,
-                "Content-Type": "multipart/form-data",
+                "Content-Type": "application/json",
             },
         };
     }
@@ -25,6 +25,7 @@ class ProductHttpService extends HTTPCore {
         let url = this.getEnv();
         let path = `/product`;
         let fullUrl = url + path;
+        console.log(param)
         return this.post(fullUrl, param, config);
     }
 
