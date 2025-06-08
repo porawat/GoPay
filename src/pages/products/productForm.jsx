@@ -1,5 +1,33 @@
-import React, { useState, useEffect } from "react";
-import { ArrowLeft, Search, Package, Truck, ShoppingCart, Zap, Palette, MoreHorizontal } from 'lucide-react';
+
+import React, { useState } from "react";
+
+const StatusBadge = ({ status }) => {
+  const isActive = status === "ACTIVE";
+  return (
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+        isActive
+          ? "bg-green-100 text-green-800 border border-green-200"
+          : "bg-red-100 text-red-800 border border-red-200"
+      }`}
+    >
+      <div
+        className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+          isActive ? "bg-green-500" : "bg-red-500"
+        }`}
+      ></div>
+      {isActive ? "ใช้งาน" : "ไม่ใช้งาน"}
+    </span>
+  );
+};
+
+const StockIndicator = ({ stock }) => {
+  let colorClass = "text-green-600";
+  if (stock === 0) colorClass = "text-red-600";
+  else if (stock <= 20) colorClass = "text-orange-600";
+
+  return <span className={`font-medium ${colorClass}`}>{stock}</span>;
+};
 
 const ProductManagementUI = () => {
   const [categories] = useState([
@@ -7,392 +35,621 @@ const ProductManagementUI = () => {
     { id: 2, name: "ขนม", count: 28, color: "#52c41a" },
     { id: 3, name: "อาหารแห้ง", count: 12, color: "#fa8c16" },
     { id: 4, name: "เครื่องใช้ไฟฟ้า", count: 8, color: "#eb2f96" },
-    { id: 5, name: "เครื่องสำอาง", count: 20, color: "#722ed1" }
+    { id: 5, name: "เครื่องสำอาง", count: 20, color: "#722ed1" },
+  ]);
+
+  const [sellers] = useState([
+    { id: "s1", name: "สมชาย", shop: "ร้านเครื่องดื่มสมชาย" },
+    { id: "s2", name: "สมหญิง", shop: "ร้านขนมสมหญิง" },
+    { id: "s3", name: "สมศักดิ์", shop: "ร้านอาหารแห้งสมศักดิ์" },
+    { id: "s4", name: "สมปอง", shop: "ร้านเครื่องใช้ไฟฟ้าสมปอง" },
   ]);
 
   const [masterProducts] = useState([
-    { 
-      id: 1, 
-      name: "โค้ก 325ml", 
-      description: "เครื่องดื่มโค้ก ขนาด 325 มิลลิลิตร", 
-      selling_price: 15.00, 
+    {
+      id: 1,
+      name: "โค้ก 325ml",
+      description: "เครื่องดื่มโค้ก ขนาด 325 มิลลิลิตร",
+      selling_price: 15.0,
       category_id: 1,
       category: "เครื่องดื่ม",
       status: "ACTIVE",
-      image: "🥤"
+      image: "🥤",
+      stock: 71,
     },
-    { 
-      id: 2, 
-      name: "เปปซี่ 325ml", 
-      description: "เครื่องดื่มเปปซี่ ขนาด 325 มิลลิลิตร", 
-      selling_price: 15.00, 
+    {
+      id: 2,
+      name: "เปปซี่ 325ml",
+      description: "เครื่องดื่มเปปซี่ ขนาด 325 มิลลิลิตร",
+      selling_price: 15.0,
       category_id: 1,
       category: "เครื่องดื่ม",
       status: "ACTIVE",
-      image: "🥤"
+      image: "🥤",
+      stock: 45,
     },
-    { 
-      id: 3, 
-      name: "ลูกอม", 
-      description: "ลูกอมรสผลไม้", 
-      selling_price: 5.00, 
+    {
+      id: 3,
+      name: "ลูกอม",
+      description: "ลูกอมรสผลไม้",
+      selling_price: 5.0,
       category_id: 2,
       category: "ขนม",
       status: "ACTIVE",
-      image: "🍬"
+      image: "🍬",
+      stock: 120,
     },
-    { 
-      id: 4, 
-      name: "ชิปส์", 
-      description: "ขนมปังกรอบรสชีส", 
-      selling_price: 25.00, 
+    {
+      id: 4,
+      name: "ชิปส์",
+      description: "ขนมปังกรอบรสชีส",
+      selling_price: 25.0,
       category_id: 2,
       category: "ขนม",
       status: "ACTIVE",
-      image: "🍟"
+      image: "🍟",
+      stock: 33,
     },
-    { 
-      id: 5, 
-      name: "น้ำส้ม", 
-      description: "น้ำส้มคั้นสด 100%", 
-      selling_price: 20.00, 
+    {
+      id: 5,
+      name: "น้ำส้ม",
+      description: "น้ำส้มคั้นสด 100%",
+      selling_price: 20.0,
       category_id: 1,
       category: "เครื่องดื่ม",
       status: "ACTIVE",
-      image: "🍊"
-    }
+      image: "🍊",
+      stock: 28,
+    },
   ]);
 
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedProducts, setSelectedProducts] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [screenHeight, setScreenHeight] = useState(window.innerHeight);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  useEffect(() => {
-    const handleResize = () => {
-      setScreenHeight(window.innerHeight);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const filteredProducts = masterProducts.filter(product => {
-    const matchCategory = !selectedCategory || product.category_id === selectedCategory.id;
-    const matchSearch = !searchTerm || 
+  const filteredProducts = masterProducts.filter((product) => {
+    const matchCategory =
+      selectedCategory === "all" || product.category_id === parseInt(selectedCategory);
+    const matchSearch =
+      !searchTerm ||
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.description.toLowerCase().includes(searchTerm.toLowerCase());
     return matchCategory && matchSearch;
   });
 
-  const handleCategorySelect = (category) => {
-    setSelectedCategory(category);
-  };
-
   const handleProductSelect = (product) => {
-    const isAlreadySelected = selectedProducts.some(p => p.id === product.id);
+    const isAlreadySelected = selectedProducts.some((p) => p.id === product.id);
     if (!isAlreadySelected) {
       const newProduct = {
         ...product,
         tempId: Date.now(),
         price: product.selling_price,
-        stock: 0
+        editStock: 0,
+        sellerId: "",
       };
-      setSelectedProducts(prev => [...prev, newProduct]);
+      setSelectedProducts((prev) => [...prev, newProduct]);
     }
-    setSelectedProduct(product);
   };
 
   const handlePriceChange = (tempId, newPrice) => {
-    setSelectedProducts(prev => 
-      prev.map(product => 
-        product.tempId === tempId 
-          ? { ...product, price: parseFloat(newPrice) || 0 }
-          : product
+    setSelectedProducts((prev) =>
+      prev.map((product) =>
+        product.tempId === tempId ? { ...product, price: newPrice || 0 } : product
       )
     );
   };
 
   const handleStockChange = (tempId, newStock) => {
-    setSelectedProducts(prev => 
-      prev.map(product => 
-        product.tempId === tempId 
-          ? { ...product, stock: parseInt(newStock) || 0 }
-          : product
+    setSelectedProducts((prev) =>
+      prev.map((product) =>
+        product.tempId === tempId ? { ...product, editStock: newStock || 0 } : product
+      )
+    );
+  };
+
+  const handleSellerChange = (tempId, sellerId) => {
+    setSelectedProducts((prev) =>
+      prev.map((product) =>
+        product.tempId === tempId ? { ...product, sellerId } : product
       )
     );
   };
 
   const removeProduct = (tempId) => {
-    setSelectedProducts(prev => prev.filter(p => p.tempId !== tempId));
+    setSelectedProducts((prev) => prev.filter((p) => p.tempId !== tempId));
   };
 
-  // Calculate heights
-  const topSectionHeight = Math.floor((screenHeight - 200) * 0.6);
-  const bottomSectionHeight = Math.floor((screenHeight - 200) * 0.4);
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedProducts(
+        currentItems.map((item) => ({
+          ...item,
+          tempId: Date.now() + item.id,
+          price: item.selling_price,
+          editStock: 0,
+          sellerId: "",
+        }))
+      );
+    } else {
+      setSelectedProducts([]);
+    }
+  };
 
-  const sidebarCategories = [
-    { name: 'ร้านค้า', count: 275, icon: Package, color: 'text-blue-600', bgColor: 'bg-blue-50', isMain: true },
-    { name: 'ร้านค้าหลัก', count: 150, icon: Package, color: 'text-gray-600', bgColor: 'bg-gray-50', indent: true },
-    { name: 'ร้านค้าสาขาเหนือ', count: 75, icon: ShoppingCart, color: 'text-gray-600', bgColor: 'bg-gray-50', indent: true },
-    { name: 'ร้านค้าสาขาใต้', count: 50, icon: ShoppingCart, color: 'text-gray-600', bgColor: 'bg-gray-50', indent: true },
-    { name: 'หมวดสินค้า', count: masterProducts.length, icon: ShoppingCart, color: 'text-green-600', bgColor: 'bg-green-50', isMain: true, isSelected: true },
-    ...categories.map(cat => ({
-      name: cat.name,
-      count: cat.count,
-      icon: Package,
-      color: 'text-gray-600',
-      bgColor: 'bg-gray-50',
-      indent: true,
-      categoryData: cat
-    }))
-  ];
+  // Pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-        {/* Header */}
         <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center space-x-3 mb-4">
-            <ArrowLeft className="w-5 h-5 text-gray-500 cursor-pointer hover:text-gray-700" />
-            <h1 className="text-lg font-semibold text-gray-900">จัดการสินค้า</h1>
+          <div className="flex items-center justify-between">
+            <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+              <svg
+                className="w-5 h-5 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+            <h2 className="text-lg font-semibold text-gray-900">จัดการสินค้า</h2>
+            <div></div>
           </div>
         </div>
-
-        {/* Categories */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-1">
-            {sidebarCategories.map((category, index) => {
-              const Icon = category.icon;
-              const isSelected = category.isSelected || (selectedCategory && selectedCategory.name === category.name);
-              return (
-                <div
-                  key={index}
-                  className={`
-                    flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-150
-                    ${category.isMain ? 'font-medium' : 'font-normal'}
-                    ${category.indent ? 'ml-4' : ''}
-                    ${isSelected
-                      ? `${category.bgColor} ${category.color}` 
-                      : 'hover:bg-gray-50 text-gray-700'
-                    }
-                  `}
-                  onClick={() => {
-                    if (category.categoryData) {
-                      handleCategorySelect(category.categoryData);
-                    } else if (category.name === 'หมวดสินค้า') {
-                      setSelectedCategory(null);
-                    }
-                  }}
+        <div className="flex-1 overflow-y-auto">
+          {/* Categories Section */}
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-900 flex items-center">
+                <svg
+                  className="w-4 h-4 mr-2 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <div className="flex items-center space-x-3">
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm">{category.name}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className={`
-                      text-xs px-2 py-1 rounded-full
-                      ${isSelected
-                        ? 'bg-white/70 text-gray-700' 
-                        : 'bg-gray-100 text-gray-600'
-                      }
-                    `}>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                  />
+                </svg>
+                หมวดสินค้า
+              </h3>
+            </div>
+            <div className="space-y-1">
+              <button
+                onClick={() => setSelectedCategory("all")}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                  selectedCategory === "all"
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>ทั้งหมด</span>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                    {categories.reduce((sum, cat) => sum + cat.count, 0)}
+                  </span>
+                </div>
+              </button>
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    selectedCategory === category.id
+                      ? "bg-green-50 text-green-700 border border-green-200"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{category.name}</span>
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
                       {category.count}
                     </span>
                   </div>
-                </div>
-              );
-            })}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">รายการสินค้า</h2>
-              <p className="text-sm text-gray-500 mt-1">{filteredProducts.length} รายการ</p>
+        <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">รายการสินค้า</h1>
+                <p className="text-sm text-gray-500">{filteredProducts.length} รายการ</p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <button className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                    />
+                  </svg>
+                  ตัวกรอง
+                </button>
+                <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                  กลับ
+                </button>
+              </div>
             </div>
           </div>
-
-          {/* Search */}
-          <div className="mt-4 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="ค้นหาสินค้า..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            />
-          </div>
         </div>
 
-        {/* Table */}
-        <div className="flex-1 overflow-auto bg-white">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        <div className="flex-1 p-6">
+          <div className="mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="relative flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg
+                  className="h-5 w-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                   />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  สินค้า
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ราคา
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  สต็อก
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  สถานะ
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredProducts.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="ค้นหาสินค้า..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              />
+            </div>
+            {selectedProducts.length > 0 && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">
+                  {selectedProducts.length} รายการที่เลือก
+                </span>
+                <button
+                  onClick={() => setSelectedProducts([])}
+                  className="px-3 py-1.5 text-sm bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                >
+                  ลบที่เลือก
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  onChange={handleSelectAll}
+                  checked={
+                    selectedProducts.length === currentItems.length &&
+                    currentItems.length > 0
+                  }
+                />
+                <div className="ml-6 grid grid-cols-12 gap-4 flex-1 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="col-span-4">สินค้า</div>
+                  <div className="col-span-2">ราคา</div>
+                  <div className="col-span-2">สต็อก</div>
+                  <div className="col-span-2">สถานะ</div>
+                  <div className="col-span-2 text-right">การจัดการ</div>
+                </div>
+              </div>
+            </div>
+            <div className="divide-y divide-gray-200">
+              {currentItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 text-center p-6">
+                  <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100">
+                    <svg
+                      className="h-8 w-8 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7h16"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="mt-4 text-lg font-semibold text-gray-900">
                     ไม่พบสินค้า
-                  </td>
-                </tr>
+                  </h3>
+                  <p className="mt-2 text-sm text-gray-500">
+                    ไม่พบสินค้าที่ตรงกับการค้นหาของคุณ
+                  </p>
+                </div>
               ) : (
-                filteredProducts.map((product) => (
-                  <tr
+                currentItems.map((product) => (
+                  <div
                     key={product.id}
-                    className={`hover:bg-gray-50 transition-colors cursor-pointer ${
-                      selectedProduct?.id === product.id ? 'bg-blue-50' : ''
-                    }`}
+                    className="px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
                     onClick={() => handleProductSelect(product)}
                   >
-                    <td className="px-6 py-4">
+                    <div className="flex items-center">
                       <input
                         type="checkbox"
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        onClick={(e) => e.stopPropagation()}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        checked={selectedProducts.some((p) => p.id === product.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleProductSelect(product);
+                        }}
                       />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <span className="text-lg">{product.image}</span>
+                      <div className="ml-6 grid grid-cols-12 gap-4 flex-1 items-center">
+                        <div className="col-span-4">
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+                              <span className="text-lg">{product.image}</span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {product.name}
+                              </p>
+                              <p className="text-sm text-gray-500 truncate">
+                                {product.description}
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-medium text-gray-900">{product.name}</div>
-                          <div className="text-sm text-gray-500">{product.description}</div>
+                        <div className="col-span-2">
+                          <span className="text-sm font-medium text-gray-900">
+                            ฿{product.selling_price.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="col-span-2">
+                          <StockIndicator stock={product.stock} />
+                        </div>
+                        <div className="col-span-2">
+                          <StatusBadge status={product.status} />
+                        </div>
+                        <div className="col-span-2 text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              แก้ไข
+                            </button>
+                            <button
+                              className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 6a1 1 0 110-2 1 1 0 010 2zm0 6a1 1 0 110-2 1 1 0 010 2z"
+                                />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-gray-900 font-medium">฿{product.selling_price.toFixed(2)}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-medium text-green-600">
-                        {Math.floor(Math.random() * 100) + 10}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        • ใช้งาน
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button className="text-gray-400 hover:text-gray-600">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Bottom Section - Selected Products */}
-        {selectedProducts.length > 0 && (
-          <div className="border-t border-gray-200 bg-white" style={{ height: `${bottomSectionHeight}px` }}>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">รายการสินค้าที่เลือก</h3>
-                <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
-                  {selectedProducts.length} รายการ
-                </span>
-              </div>
-              
-              <div className="space-y-3 max-h-60 overflow-y-auto">
-                {selectedProducts.map((product) => (
-                  <div key={product.tempId} className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center">
-                    <span className="text-xl mr-3">{product.image}</span>
-                    <div className="flex-1">
-                      <span className="font-medium text-gray-900">{product.name}</span>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600">ราคา:</span>
-                        <input
-                          type="number"
-                          className="w-24 p-2 border border-gray-300 rounded text-center text-sm"
-                          placeholder="0.00"
-                          min="0.01"
-                          step="0.01"
-                          defaultValue={product.price}
-                          onChange={(e) => handlePriceChange(product.tempId, e.target.value)}
-                        />
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600">จำนวน:</span>
-                        <input
-                          type="number"
-                          className="w-20 p-2 border border-gray-300 rounded text-center text-sm"
-                          placeholder="0"
-                          min="0"
-                          step="1"
-                          defaultValue={product.stock}
-                          onChange={(e) => handleStockChange(product.tempId, e.target.value)}
-                        />
-                      </div>
-                      <button
-                        onClick={() => removeProduct(product.tempId)}
-                        className="text-red-400 hover:text-red-600 font-bold text-lg px-2"
-                      >
-                        ×
-                      </button>
                     </div>
                   </div>
-                ))}
+                ))
+              )}
+            </div>
+            {totalPages > 1 && (
+              <div className="bg-gray-50 border-t border-gray-200 px-6 py-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    แสดง {indexOfFirstItem + 1} -{" "}
+                    {Math.min(indexOfLastItem, filteredProducts.length)} จาก{" "}
+                    {filteredProducts.length} รายการ
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    >
+                      ก่อนหน้า
+                    </button>
+                    <div className="flex items-center space-x-1">
+                      {[...Array(totalPages)].map((_, index) => {
+                        const page = index + 1;
+                        if (
+                          page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1)
+                        ) {
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page)}
+                              className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                                currentPage === page
+                                  ? "bg-blue-600 text-white"
+                                  : "border border-gray-300 hover:bg-gray-50"
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          );
+                        } else if (page === currentPage - 2 || page === currentPage + 2) {
+                          return (
+                            <span key={page} className="text-gray-400">
+                              ...
+                            </span>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+                    <button
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    >
+                      ถัดไป
+                    </button>
+                  </div>
+                </div>
               </div>
-              
-              <div className="border-t border-gray-200 pt-4 mt-4 flex justify-between items-center">
-                <span className="text-gray-600">
+            )}
+          </div>
+
+          {selectedProducts.length > 0 && (
+            <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <h3 className="text-base font-medium text-gray-900">
+                    รายการสินค้าที่เลือก
+                  </h3>
+                  <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    {selectedProducts.length} รายการ
+                  </span>
+                </div>
+              </div>
+              <div className="max-h-64 overflow-y-auto mb-6">
+                <div className="space-y-2">
+                  {selectedProducts.map((product) => (
+                    <div
+                      key={product.tempId}
+                      className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200"
+                    >
+                      <span className="text-lg mr-3">{product.image}</span>
+                      <span className="flex-1 font-medium text-sm text-gray-700">
+                        {product.name}
+                      </span>
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-600">ราคา:</span>
+                          <input
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value={product.price}
+                            onChange={(e) =>
+                              handlePriceChange(product.tempId, parseFloat(e.target.value))
+                            }
+                            className="w-20 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-600">จำนวน:</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={product.editStock}
+                            onChange={(e) =>
+                              handleStockChange(product.tempId, parseInt(e.target.value))
+                            }
+                            className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-600">ผู้ขาย:</span>
+                          <select
+                            value={product.sellerId}
+                            onChange={(e) =>
+                              handleSellerChange(product.tempId, e.target.value)
+                            }
+                            className="w-36 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white cursor-pointer"
+                          >
+                            <option value="">เลือกผู้ขาย</option>
+                            {sellers.map((seller) => (
+                              <option key={seller.id} value={seller.id}>
+                                {seller.name} ({seller.shop})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          onClick={() => removeProduct(product.tempId)}
+                          className="text-red-600 hover:text-red-800 transition-colors"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                <span className="text-sm text-gray-600">
                   รวม {selectedProducts.length} รายการสินค้า
                 </span>
-                <div className="space-x-3">
-                  <button 
-                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                <div className="flex space-x-2">
+                  <button
                     onClick={() => setSelectedProducts([])}
+                    className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     ยกเลิก
                   </button>
-                  <button className="px-8 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  <button className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                     บันทึกสินค้า
                   </button>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
