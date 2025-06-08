@@ -1,5 +1,5 @@
-
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import CoreAPI from "../../store";
 
 const StatusBadge = ({ status }) => {
   const isActive = status === "ACTIVE";
@@ -30,13 +30,52 @@ const StockIndicator = ({ stock }) => {
 };
 
 const ProductManagementUI = () => {
-  const [categories] = useState([
-    { id: 1, name: "เครื่องดื่ม", count: 15, color: "#1890ff" },
-    { id: 2, name: "ขนม", count: 28, color: "#52c41a" },
-    { id: 3, name: "อาหารแห้ง", count: 12, color: "#fa8c16" },
-    { id: 4, name: "เครื่องใช้ไฟฟ้า", count: 8, color: "#eb2f96" },
-    { id: 5, name: "เครื่องสำอาง", count: 20, color: "#722ed1" },
-  ]);
+  const [categories, setCategoryList] = useState([]);
+  const [masterProducts, setMasterProducts] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const getCategorys = async () => {
+    try {
+      const res = await CoreAPI.categoryHttpService.getCategory();
+      console.log(res);
+      const { data, code } = res;
+      if (code === 1000) {
+        const categoriesWithCount = data.map((category) => ({
+          ...category,
+          count: 0,
+        }));
+        setCategoryList(categoriesWithCount);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const getprodoctMaster = async () => {
+    try {
+      const res = await CoreAPI.productMasterHttpService.getproductMasterByid(
+        selectedCategory
+      );
+      console.log(res);
+      const { data, code } = res;
+      if (code === 1000) {
+        setMasterProducts(data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    console.log(selectedCategory);
+    getprodoctMaster();
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    getCategorys();
+  }, []);
 
   const [sellers] = useState([
     { id: "s1", name: "สมชาย", shop: "ร้านเครื่องดื่มสมชาย" },
@@ -45,82 +84,20 @@ const ProductManagementUI = () => {
     { id: "s4", name: "สมปอง", shop: "ร้านเครื่องใช้ไฟฟ้าสมปอง" },
   ]);
 
-  const [masterProducts] = useState([
-    {
-      id: 1,
-      name: "โค้ก 325ml",
-      description: "เครื่องดื่มโค้ก ขนาด 325 มิลลิลิตร",
-      selling_price: 15.0,
-      category_id: 1,
-      category: "เครื่องดื่ม",
-      status: "ACTIVE",
-      image: "🥤",
-      stock: 71,
-    },
-    {
-      id: 2,
-      name: "เปปซี่ 325ml",
-      description: "เครื่องดื่มเปปซี่ ขนาด 325 มิลลิลิตร",
-      selling_price: 15.0,
-      category_id: 1,
-      category: "เครื่องดื่ม",
-      status: "ACTIVE",
-      image: "🥤",
-      stock: 45,
-    },
-    {
-      id: 3,
-      name: "ลูกอม",
-      description: "ลูกอมรสผลไม้",
-      selling_price: 5.0,
-      category_id: 2,
-      category: "ขนม",
-      status: "ACTIVE",
-      image: "🍬",
-      stock: 120,
-    },
-    {
-      id: 4,
-      name: "ชิปส์",
-      description: "ขนมปังกรอบรสชีส",
-      selling_price: 25.0,
-      category_id: 2,
-      category: "ขนม",
-      status: "ACTIVE",
-      image: "🍟",
-      stock: 33,
-    },
-    {
-      id: 5,
-      name: "น้ำส้ม",
-      description: "น้ำส้มคั้นสด 100%",
-      selling_price: 20.0,
-      category_id: 1,
-      category: "เครื่องดื่ม",
-      status: "ACTIVE",
-      image: "🍊",
-      stock: 28,
-    },
-  ]);
-
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedProducts, setSelectedProducts] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
   const filteredProducts = masterProducts.filter((product) => {
     const matchCategory =
-      selectedCategory === "all" || product.category_id === parseInt(selectedCategory);
+      selectedCategory === "all" || product.category_id === selectedCategory;
     const matchSearch =
       !searchTerm ||
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase());
+      product.name.toLowerCase().includes(searchTerm.toLowerCase());
+
     return matchCategory && matchSearch;
   });
 
   const handleProductSelect = (product) => {
-    const isAlreadySelected = selectedProducts.some((p) => p.id === product.id);
+    const isAlreadySelected = selectedProducts.some(
+      (p) => p.product_id === product.product_id
+    );
     if (!isAlreadySelected) {
       const newProduct = {
         ...product,
@@ -136,7 +113,9 @@ const ProductManagementUI = () => {
   const handlePriceChange = (tempId, newPrice) => {
     setSelectedProducts((prev) =>
       prev.map((product) =>
-        product.tempId === tempId ? { ...product, price: newPrice || 0 } : product
+        product.tempId === tempId
+          ? { ...product, price: newPrice || 0 }
+          : product
       )
     );
   };
@@ -144,7 +123,9 @@ const ProductManagementUI = () => {
   const handleStockChange = (tempId, newStock) => {
     setSelectedProducts((prev) =>
       prev.map((product) =>
-        product.tempId === tempId ? { ...product, editStock: newStock || 0 } : product
+        product.tempId === tempId
+          ? { ...product, editStock: newStock || 0 }
+          : product
       )
     );
   };
@@ -166,7 +147,7 @@ const ProductManagementUI = () => {
       setSelectedProducts(
         currentItems.map((item) => ({
           ...item,
-          tempId: Date.now() + item.id,
+          tempId: Date.now() + item.product_id,
           price: item.selling_price,
           editStock: 0,
           sellerId: "",
@@ -180,7 +161,10 @@ const ProductManagementUI = () => {
   // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
+  const currentItems = filteredProducts.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
   return (
@@ -204,7 +188,9 @@ const ProductManagementUI = () => {
                 />
               </svg>
             </button>
-            <h2 className="text-lg font-semibold text-gray-900">จัดการสินค้า</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              จัดการสินค้า
+            </h2>
             <div></div>
           </div>
         </div>
@@ -248,15 +234,15 @@ const ProductManagementUI = () => {
               {categories.map((category) => (
                 <button
                   key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
+                  onClick={() => setSelectedCategory(category.category_id)}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                    selectedCategory === category.id
+                    selectedCategory === category.category_id
                       ? "bg-green-50 text-green-700 border border-green-200"
                       : "text-gray-700 hover:bg-gray-50"
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">{category.name}</span>
+                    <span className="font-medium">{category.cat_name}</span>
                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
                       {category.count}
                     </span>
@@ -274,8 +260,12 @@ const ProductManagementUI = () => {
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">รายการสินค้า</h1>
-                <p className="text-sm text-gray-500">{filteredProducts.length} รายการ</p>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  รายการสินค้า
+                </h1>
+                <p className="text-sm text-gray-500">
+                  {filteredProducts.length} รายการ
+                </p>
               </div>
               <div className="flex items-center space-x-3">
                 <button className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
@@ -405,7 +395,7 @@ const ProductManagementUI = () => {
               ) : (
                 currentItems.map((product) => (
                   <div
-                    key={product.id}
+                    key={product.product_id}
                     className="px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
                     onClick={() => handleProductSelect(product)}
                   >
@@ -413,7 +403,9 @@ const ProductManagementUI = () => {
                       <input
                         type="checkbox"
                         className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        checked={selectedProducts.some((p) => p.id === product.id)}
+                        checked={selectedProducts.some(
+                          (p) => p.product_id === product.product_id
+                        )}
                         onChange={(e) => {
                           e.stopPropagation();
                           handleProductSelect(product);
@@ -423,7 +415,9 @@ const ProductManagementUI = () => {
                         <div className="col-span-4">
                           <div className="flex items-center">
                             <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                              <span className="text-lg">{product.image}</span>
+                              <span className="text-lg">
+                                {product.image_url}
+                              </span>
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium text-gray-900 truncate">
@@ -437,7 +431,7 @@ const ProductManagementUI = () => {
                         </div>
                         <div className="col-span-2">
                           <span className="text-sm font-medium text-gray-900">
-                            ฿{product.selling_price.toFixed(2)}
+                            ฿{product.selling_price}
                           </span>
                         </div>
                         <div className="col-span-2">
@@ -490,7 +484,9 @@ const ProductManagementUI = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
                       disabled={currentPage === 1}
                       className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                     >
@@ -517,7 +513,10 @@ const ProductManagementUI = () => {
                               {page}
                             </button>
                           );
-                        } else if (page === currentPage - 2 || page === currentPage + 2) {
+                        } else if (
+                          page === currentPage - 2 ||
+                          page === currentPage + 2
+                        ) {
                           return (
                             <span key={page} className="text-gray-400">
                               ...
@@ -556,12 +555,12 @@ const ProductManagementUI = () => {
               </div>
               <div className="max-h-64 overflow-y-auto mb-6">
                 <div className="space-y-2">
-                  {selectedProducts.map((product) => (
+                  {selectedProducts.map((product, index) => (
                     <div
-                      key={product.tempId}
+                      key={index}
                       className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200"
                     >
-                      <span className="text-lg mr-3">{product.image}</span>
+                      <span className="text-lg mr-3">{product.image_url}</span>
                       <span className="flex-1 font-medium text-sm text-gray-700">
                         {product.name}
                       </span>
@@ -574,7 +573,10 @@ const ProductManagementUI = () => {
                             step="0.01"
                             value={product.price}
                             onChange={(e) =>
-                              handlePriceChange(product.tempId, parseFloat(e.target.value))
+                              handlePriceChange(
+                                product.tempId,
+                                parseFloat(e.target.value)
+                              )
                             }
                             className="w-20 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                           />
@@ -586,7 +588,10 @@ const ProductManagementUI = () => {
                             min="0"
                             value={product.editStock}
                             onChange={(e) =>
-                              handleStockChange(product.tempId, parseInt(e.target.value))
+                              handleStockChange(
+                                product.tempId,
+                                parseInt(e.target.value)
+                              )
                             }
                             className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                           />
