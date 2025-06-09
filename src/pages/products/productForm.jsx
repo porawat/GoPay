@@ -1,6 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
 import CoreAPI from "../../store";
-import { useParams } from "react-router-dom";
+import { Modal, message } from "antd"; // เพิ่ม message จาก Ant Design
+import ProductForm from "./modal/productEditForm";
+
 const StatusBadge = ({ status }) => {
   const isActive = status === "ACTIVE";
   return (
@@ -30,7 +34,8 @@ const StockIndicator = ({ stock }) => {
 };
 
 const ProductManagementUI = () => {
-  const { shopId } = useParams();
+  const { shopId } = useParams(); // ปรับให้ destructuring ทันที
+  const navigate = useNavigate(); // กำหนด navigate
   const [categories, setCategoryList] = useState([]);
   const [masterProducts, setMasterProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -242,7 +247,10 @@ const ProductManagementUI = () => {
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+           <button
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              onClick={() => navigate(`/product/${shopId}`)} // ใช้งาน navigate ที่นี่
+            >
               <svg
                 className="w-5 h-5 text-gray-600"
                 fill="none"

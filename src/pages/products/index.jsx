@@ -57,19 +57,27 @@ const ProductPage = () => {
   const [itemsPerPage] = useState(10);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedWarehouse, setSelectedWarehouse] = useState("all");
+  const [selectedWholesaleStore, setSelectedWholesaleStore] = useState("all");
   const [expandedCategories, setExpandedCategories] = useState({});
   const [expandedWarehouses, setExpandedWarehouses] = useState({});
+  const [expandedWholesaleStores, setExpandedWholesaleStores] = useState({});
   const shopId = params?.shopId || "";
   const [editModalOpen, setEditModalOpen] = useState({
     open: false,
     product: null,
   });
 
-  // Mock data for warehouses and categories
+  // Mock data for warehouses, wholesale stores, and categories
   const warehouses = [
     { id: "wh1", name: "คลังสินค้าหลัก", location: "กรุงเทพ", count: 150 },
     { id: "wh2", name: "คลังสินค้าภาคเหนือ", location: "เชียงใหม่", count: 75 },
     { id: "wh3", name: "คลังสินค้าภาคใต้", location: "ภูเก็ต", count: 50 },
+  ];
+
+  const wholesaleStores = [
+    { id: "ws1", name: "ร้านค้าส่ง A", location: "กรุงเทพ", count: 100 },
+    { id: "ws2", name: "ร้านค้าส่ง B", location: "เชียงใหม่", count: 60 },
+    { id: "ws3", name: "ร้านค้าส่ง C", location: "ขอนแก่น", count: 40 },
   ];
 
   const categories = [
@@ -155,12 +163,13 @@ const ProductPage = () => {
         .includes(searchTerm.toLowerCase());
       const matchesCategory = selectedCategory === "all" || true; // Replace with actual category check
       const matchesWarehouse = selectedWarehouse === "all" || true; // Replace with actual warehouse check
-      return matchesSearch && matchesCategory && matchesWarehouse;
+      const matchesWholesaleStore = selectedWholesaleStore === "all" || true; // Added wholesale store check
+      return matchesSearch && matchesCategory && matchesWarehouse && matchesWholesaleStore;
     });
 
     setFilteredProducts(filtered);
     setCurrentPage(1);
-  }, [searchTerm, products, selectedCategory, selectedWarehouse]);
+  }, [searchTerm, products, selectedCategory, selectedWarehouse, selectedWholesaleStore]);
 
   // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -197,6 +206,13 @@ const ProductPage = () => {
     setExpandedWarehouses((prev) => ({
       ...prev,
       [warehouseId]: !prev[warehouseId],
+    }));
+  };
+
+  const toggleWholesaleStoreExpand = (storeId) => {
+    setExpandedWholesaleStores((prev) => ({
+      ...prev,
+      [storeId]: !prev[storeId],
     }));
   };
 
@@ -297,6 +313,71 @@ const ProductPage = () => {
             </div>
           </div>
 
+          {/* Wholesale Stores Section */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-900 flex items-center">
+                <svg
+                  className="w-4 h-4 mr-2 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 3h18v18H3V3zm2 2v14h14V5H5zm3 2h8v2H8V7zm0 4h8v2H8v-2zm0 4h5v2H8v-2z"
+                  />
+                </svg>
+                ร้านค้าส่ง
+              </h3>
+            </div>
+
+            <div className="space-y-1">
+              <button
+                onClick={() => setSelectedWholesaleStore("all")}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                  selectedWholesaleStore === "all"
+                    ? "bg-purple-50 text-purple-700 border border-purple-200"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>ทั้งหมด</span>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                    {wholesaleStores.reduce((sum, ws) => sum + ws.count, 0)}
+                  </span>
+                </div>
+              </button>
+
+              {wholesaleStores.map((store) => (
+                <div key={store.id}>
+                  <button
+                    onClick={() => setSelectedWholesaleStore(store.id)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      selectedWholesaleStore === store.id
+                        ? "bg-purple-50 text-purple-700 border border-purple-200"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">{store.name}</div>
+                        <div className="text-xs text-gray-500">
+                          {store.location}
+                        </div>
+                      </div>
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                        {store.count}
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Categories Section */}
           <div className="p-4 border-t border-gray-200">
             <div className="flex items-center justify-between mb-3">
@@ -320,7 +401,7 @@ const ProductPage = () => {
 
             <div className="space-y-1">
               <button
-                onClick={() => setSelectedCategory("all")}
+                onClick={() => setSelectedCategory("all")} // Fixed missing parenthesis
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                   selectedCategory === "all"
                     ? "bg-green-50 text-green-700 border border-green-200"
