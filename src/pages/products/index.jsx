@@ -5,7 +5,6 @@ import CoreAPI from "../../store";
 import { Modal } from "antd";
 import ProductForm from "./modal/productEditForm";
 
-// Define StatusBadge as a standalone component
 const StatusBadge = ({ status }) => {
   const isActive = status === "ACTIVE";
   return (
@@ -26,7 +25,6 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// Define StockIndicator as a standalone component
 const StockIndicator = ({ stock }) => {
   let colorClass = "text-green-600";
   if (stock === 0) colorClass = "text-red-600";
@@ -35,7 +33,6 @@ const StockIndicator = ({ stock }) => {
   return <span className={`font-medium ${colorClass}`}>{stock}</span>;
 };
 
-// PropTypes for StatusBadge and StockIndicator
 StatusBadge.propTypes = {
   status: PropTypes.string.isRequired,
 };
@@ -57,60 +54,37 @@ const ProductPage = () => {
   const [itemsPerPage] = useState(10);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedWarehouse, setSelectedWarehouse] = useState("all");
-  const [expandedCategories, setExpandedCategories] = useState({});
-  const [expandedWarehouses, setExpandedWarehouses] = useState({});
+  const [selectedSupplier, setSelectedSupplier] = useState("all");
   const shopId = params?.shopId || "";
   const [editModalOpen, setEditModalOpen] = useState({
     open: false,
     product: null,
   });
+  const [warehouses, setWarehouses] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
 
-  // Mock data for warehouses and categories
-  const warehouses = [
-    { id: "wh1", name: "คลังสินค้าหลัก", location: "กรุงเทพ", count: 150 },
-    { id: "wh2", name: "คลังสินค้าภาคเหนือ", location: "เชียงใหม่", count: 75 },
-    { id: "wh3", name: "คลังสินค้าภาคใต้", location: "ภูเก็ต", count: 50 },
-  ];
+  const fetchFilters = async () => {
+    try {
+      const warehouseResponse = await CoreAPI.warehouseHttpService.getWarehouses(shopId);
+      setWarehouses(warehouseResponse?.datarow || []);
 
-  const categories = [
-    {
-      id: "electronics",
-      name: "อิเล็กทรอนิกส์",
-      count: 45,
-      subcategories: [
-        { id: "mobile", name: "มือถือ", count: 25 },
-        { id: "laptop", name: "คอมพิวเตอร์", count: 15 },
-        { id: "accessories", name: "อุปกรณ์เสริม", count: 5 },
-      ],
-    },
-    {
-      id: "fashion",
-      name: "เสื้อผ้าแฟชั่น",
-      count: 80,
-      subcategories: [
-        { id: "men", name: "เสื้อผ้าผู้ชาย", count: 30 },
-        { id: "women", name: "เสื้อผ้าผู้หญิง", count: 40 },
-        { id: "shoes", name: "รองเท้า", count: 10 },
-      ],
-    },
-    {
-      id: "home",
-      name: "ของใช้ในบ้าน",
-      count: 35,
-      subcategories: [
-        { id: "furniture", name: "เฟอร์นิเจอร์", count: 15 },
-        { id: "kitchen", name: "ห้องครัว", count: 20 },
-      ],
-    },
-  ];
+      const categoryResponse = await CoreAPI.categoryHttpService.getCategories(shopId);
+      setCategories(categoryResponse?.datarow || []);
+
+      const supplierResponse = await CoreAPI.supplierHttpService.getSuppliers(shopId);
+      setSuppliers(supplierResponse?.datarow || []);
+    } catch (error) {
+      console.error("Error fetching filters:", error);
+      setError("ไม่สามารถโหลดตัวกรองได้");
+    }
+  };
 
   const getProducts = async () => {
     setIsLoading(true);
     setError(null);
     try {
       const response = await CoreAPI.productHttpService.getproduct(shopId);
-      console.log("API Response:", response);
-      console.log("Products Data:", response?.datarow);
       if (response?.code === 1000) {
         const validProducts = (response?.datarow || []).map((product) => ({
           ...product,
@@ -144,25 +118,31 @@ const ProductPage = () => {
 
   useEffect(() => {
     getProducts();
+    fetchFilters();
   }, [shopId]);
 
-  // Search and filter logic
   useEffect(() => {
     let filtered = products.filter((product) => {
       const productName = product.product_name || product.name || "";
       const matchesSearch = productName
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === "all" || true; // Replace with actual category check
-      const matchesWarehouse = selectedWarehouse === "all" || true; // Replace with actual warehouse check
-      return matchesSearch && matchesCategory && matchesWarehouse;
+      const matchesCategory =
+        selectedCategory === "all" ||
+        product.category_id === selectedCategory;
+      const matchesWarehouse =
+        selectedWarehouse === "all" ||
+        product.warehouse_id === selectedWarehouse;
+      const matchesSupplier =
+        selectedSupplier === "all" ||
+        product.supplier_id === selectedSupplier;
+      return matchesSearch && matchesCategory && matchesWarehouse && matchesSupplier;
     });
 
     setFilteredProducts(filtered);
     setCurrentPage(1);
-  }, [searchTerm, products, selectedCategory, selectedWarehouse]);
+  }, [searchTerm, products, selectedCategory, selectedWarehouse, selectedSupplier]);
 
-  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
@@ -171,33 +151,19 @@ const ProductPage = () => {
   const handleSelectAll = (e) => {
     if (e.target.checked) {
       setSelectedProducts(
-        currentItems.map((item) => item.id || item.product_id)
+        currentItems.map((item) => item.product_uid)
       );
     } else {
       setSelectedProducts([]);
     }
   };
 
-  const handleSelectProduct = (productId) => {
+  const handleSelectProduct = (productUid) => {
     setSelectedProducts((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
+      prev.includes(productUid)
+        ? prev.filter((id) => id !== productUid)
+        : [...prev, productUid]
     );
-  };
-
-  const toggleCategoryExpand = (categoryId) => {
-    setExpandedCategories((prev) => ({
-      ...prev,
-      [categoryId]: !prev[categoryId],
-    }));
-  };
-
-  const toggleWarehouseExpand = (warehouseId) => {
-    setExpandedWarehouses((prev) => ({
-      ...prev,
-      [warehouseId]: !prev[warehouseId],
-    }));
   };
 
   return (
@@ -265,34 +231,97 @@ const ProductPage = () => {
                 <div className="flex items-center justify-between">
                   <span>ทั้งหมด</span>
                   <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                    {warehouses.reduce((sum, wh) => sum + wh.count, 0)}
+                    {products.length}
                   </span>
                 </div>
               </button>
 
               {warehouses.map((warehouse) => (
-                <div key={warehouse.id}>
-                  <button
-                    onClick={() => setSelectedWarehouse(warehouse.id)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                      selectedWarehouse === warehouse.id
-                        ? "bg-blue-50 text-blue-700 border border-blue-200"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium">{warehouse.name}</div>
-                        <div className="text-xs text-gray-500">
-                          {warehouse.location}
-                        </div>
+                <button
+                  key={warehouse.warehouse_id}
+                  onClick={() => setSelectedWarehouse(warehouse.warehouse_id)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    selectedWarehouse === warehouse.warehouse_id
+                      ? "bg-blue-50 text-blue-700 border border-blue-200"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{warehouse.name}</div>
+                      <div className="text-xs text-gray-500">
+                        {warehouse.location || "-"}
                       </div>
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                        {warehouse.count}
-                      </span>
                     </div>
-                  </button>
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                      {products.filter(p => p.warehouse_id === warehouse.warehouse_id).length}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Suppliers Section */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-900 flex items-center">
+                <svg
+                  className="w-4 h-4 mr-2 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 1.857h10M12 3a9 9 0 110 18"
+                  />
+                </svg>
+                ผู้ขาย
+              </h3>
+            </div>
+
+            <div className="space-y-1">
+              <button
+                onClick={() => setSelectedSupplier("all")}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                  selectedSupplier === "all"
+                    ? "bg-purple-50 text-purple-700 border border-purple-200"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>ทั้งหมด</span>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                    {products.length}
+                  </span>
                 </div>
+              </button>
+
+              {suppliers.map((supplier) => (
+                <button
+                  key={supplier.supplier_id}
+                  onClick={() => setSelectedSupplier(supplier.supplier_id)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    selectedSupplier === supplier.supplier_id
+                      ? "bg-purple-50 text-purple-700 border border-purple-200"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{supplier.name}</div>
+                      <div className="text-xs text-gray-500">
+                        {supplier.contact_info || "-"}
+                      </div>
+                    </div>
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                      {products.filter(p => p.supplier_id === supplier.supplier_id).length}
+                    </span>
+                  </div>
+                </button>
               ))}
             </div>
           </div>
@@ -314,7 +343,7 @@ const ProductPage = () => {
                     d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                   />
                 </svg>
-                หมวดสินค้า
+                หมวดหมู่
               </h3>
             </div>
 
@@ -330,74 +359,28 @@ const ProductPage = () => {
                 <div className="flex items-center justify-between">
                   <span>ทั้งหมด</span>
                   <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                    {categories.reduce((sum, cat) => sum + cat.count, 0)}
+                    {products.length}
                   </span>
                 </div>
               </button>
 
               {categories.map((category) => (
-                <div key={category.id}>
-                  <div className="flex items-center">
-                    <button
-                      onClick={() => toggleCategoryExpand(category.id)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <svg
-                        className={`w-3 h-3 text-gray-400 transition-transform ${
-                          expandedCategories[category.id] ? "rotate-90" : ""
-                        }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setSelectedCategory(category.id)}
-                      className={`flex-1 text-left px-2 py-2 rounded-lg text-sm transition-colors ${
-                        selectedCategory === category.id
-                          ? "bg-green-50 text-green-700 border border-green-200"
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{category.name}</span>
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                          {category.count}
-                        </span>
-                      </div>
-                    </button>
+                <button
+                  key={category.category_id}
+                  onClick={() => setSelectedCategory(category.category_id)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    selectedCategory === category.category_id
+                      ? "bg-green-50 text-green-700 border border-green-200"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{category.cat_name}</span>
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                      {products.filter(p => p.category_id === category.category_id).length}
+                    </span>
                   </div>
-
-                  {expandedCategories[category.id] && (
-                    <div className="ml-6 mt-1 space-y-1">
-                      {category.subcategories.map((subcategory) => (
-                        <button
-                          key={subcategory.id}
-                          onClick={() => setSelectedCategory(subcategory.id)}
-                          className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                            selectedCategory === subcategory.id
-                              ? "bg-green-50 text-green-700 border border-green-200"
-                              : "text-gray-600 hover:bg-gray-50"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span>{subcategory.name}</span>
-                            <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
-                              {subcategory.count}
-                            </span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -611,37 +594,41 @@ const ProductPage = () => {
               <div className="divide-y divide-gray-200">
                 {currentItems.map((product) => (
                   <div
-                    key={product.id || product.product_id}
+                    key={product.product_uid}
                     className="px-6 py-4 hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center">
                       <input
                         type="checkbox"
                         className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        checked={selectedProducts.includes(
-                          product.id || product.product_id
-                        )}
-                        onChange={() =>
-                          handleSelectProduct(product.id || product.product_id)
-                        }
+                        checked={selectedProducts.includes(product.product_uid)}
+                        onChange={() => handleSelectProduct(product.product_uid)}
                       />
                       <div className="ml-6 grid grid-cols-12 gap-4 flex-1 items-center">
                         <div className="col-span-4">
                           <div className="flex items-center">
                             <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                              <svg
-                                className="h-5 w-5 text-gray-400"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M9 1L9 3"
+                              {product.image_url ? (
+                                <img
+                                  src={product.image_url}
+                                  alt={product.product_name}
+                                  className="h-10 w-10 object-cover rounded-lg"
                                 />
-                              </svg>
+                              ) : (
+                                <svg
+                                  className="h-5 w-5 text-gray-400"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M9 1L9 3"
+                                  />
+                                </svg>
+                              )}
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium text-gray-900 truncate">
@@ -810,4 +797,3 @@ const ProductPage = () => {
 };
 
 export default ProductPage;
-export { StatusBadge, StockIndicator };
