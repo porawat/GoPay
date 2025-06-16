@@ -1,32 +1,45 @@
 import axios from 'axios';
 
 class HTTPCore {
-  api;
-  constructor({ }) {
-    this.api = axios;
+  constructor(config) {
+    this.client = axios.create(config);
   }
 
-  async post(path = '/', data = {}, config = {}) {
-    return this.api.post(path, data, config).then(_processData);
+  async get(url, config = {}) {
+    try {
+      const response = await this.client.get(url, config);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
-  get(path = '/', config = {}) {
-    return this.api.get(path, config).then(_processData);
+  async post(url, data, config = {}) {
+    try {
+      const response = await this.client.post(url, data, config);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
-  put(path = '/', data = {}, config = {}) {
-    return this.api.put(path, data, config).then(_processData);
+  async put(url, data, config = {}) {
+    try {
+      const response = await this.client.put(url, data, config);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
-  patch(path = '/', data = {}, config = {}) {
-    return this.api.patch(path, data, config).then(_processData);
-  }
-
-  delete(path = '/', config = {}) {
-    return this.api.delete(path, config).then(_processData);
+  async delete(url, config = {}) {
+    try {
+      const response = await this.client.delete(url, config);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 }
-
-const _processData = res => res.data;
 
 export default HTTPCore;

@@ -1,3 +1,4 @@
+//frontend/core/product/product.js
 import { API_URL } from '../../../config/config';
 import HTTPCore from '../../http.core';
 class ProductHttpService extends HTTPCore {

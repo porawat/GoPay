@@ -1,31 +1,27 @@
+import axios from 'axios';
 import { API_URL } from '../../../config/config';
-import HTTPCore from '../../http.core';
-class CategoryHttpService extends HTTPCore {
-    constructor() {
-        super({});
-    }
-    getEnv() {
-        return import.meta.env.VITE_API_ENDPOINT;
-    }
-    getToken() {
-        return localStorage.getItem("token");
-    }
-    getHeaders() {
-        return {
-            headers: {
-                Authorization: `Bearer ${this.getToken()}`,
-                "Content-Type": "multipart/form-data",
-            },
-        };
-    }
 
-    getCategory(param) {
-        let config = this.getHeaders();
-        let path = `${API_URL}/category`;
-        console.log(config, path)
-        return this.get(path, config);
-    }
+export class CategoryHttpService {
+  constructor() {
+    this.apiClient = axios.create({
+      baseURL: API_URL || import.meta.env.VITE_API_ENDPOINT || 'http://localhost:3001/api',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+  }
 
+  async getCategories() {
+    try {
+      const url = '/category';
+      console.log('Fetching categories from:', this.apiClient.defaults.baseURL + url);
+      const response = await this.apiClient.get(url);
+      console.log('Category API Response:', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw error;
+    }
+  }
 }
-
-export { CategoryHttpService };
