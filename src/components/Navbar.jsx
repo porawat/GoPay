@@ -57,12 +57,12 @@ function Sidebar({ isOpen, setIsOpen }) {
       label: "ร้านค้า",
       path: "/myshop",
     },
-    {
-      key: "members",
-      icon: <UserOutlined />,
-      label: "สมาชิก",
-      path: "/members",
-    },
+    // {
+    //   key: "members",
+    //   icon: <UserOutlined />,
+    //   label: "สมาชิก",
+    //   path: "/members",
+    // },
     {
       key: "admin",
       icon: <FaStore style={{ color: "green", marginRight: 8 }} />,

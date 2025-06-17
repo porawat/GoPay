@@ -1,3 +1,4 @@
+//fronend/store/code/product/category.js
 import axios from 'axios';
 import { API_URL } from '../../../config/config';
 
