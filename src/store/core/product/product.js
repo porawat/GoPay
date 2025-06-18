@@ -1,6 +1,7 @@
 //frontend/core/product/product.js
 import { API_URL } from '../../../config/config';
 import HTTPCore from '../../http.core';
+
 class ProductHttpService extends HTTPCore {
     constructor() {
         super({});
@@ -20,7 +21,6 @@ class ProductHttpService extends HTTPCore {
         };
     }
 
-    // ==============================
     createProduct(param) {
         let config = this.getHeaders();
         let url = this.getEnv();
@@ -33,7 +33,6 @@ class ProductHttpService extends HTTPCore {
     getproduct(param) {
         let config = this.getHeaders();
         let path = `${API_URL}/product/${param}`;
-
         return this.get(path, config);
     }
     updateProduct(param) {

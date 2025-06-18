@@ -1,3 +1,4 @@
+//fronend/store/index.js
 import { ProductHttpService } from "./core/product/product";
 import { ProductMasterHttpService } from "./core/product/productmaster";
 import { ShopHttpService } from "./core/shop/shop";

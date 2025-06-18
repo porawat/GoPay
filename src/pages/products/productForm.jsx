@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import CoreAPI from "../../store";
 import { useParams } from "react-router-dom";
+import toast from 'react-hot-toast';
 
 const StatusBadge = ({ status }) => {
   const isActive = status === "ACTIVE";
@@ -39,17 +40,19 @@ const ProductManagementUI = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6; // เปลี่ยนเป็น 6
+  const itemsPerPage = 6;
 
   const getCategorys = async () => {
     if (!CoreAPI.categoryHttpService) {
       console.error("categoryHttpService is not defined in CoreAPI");
+      toast.error("ไม่สามารถเชื่อมต่อกับบริการหมวดหมู่");
       return;
     }
     try {
       const res = await CoreAPI.categoryHttpService.getCategories();
       if (!res) {
         console.error("API response is undefined or null:", res);
+        toast.error("ไม่พบข้อมูลหมวดหมู่");
         return;
       }
       const { code, datarow } = res;
@@ -62,9 +65,11 @@ const ProductManagementUI = () => {
         await getprodoctMaster(categoriesWithCount);
       } else {
         console.error("Invalid API response structure or code:", res);
+        toast.error("รูปแบบข้อมูลหมวดหมู่ไม่ถูกต้อง");
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
+      toast.error("เกิดข้อผิดพลาดในการดึงข้อมูลหมวดหมู่");
     }
   };
 
@@ -88,9 +93,11 @@ const ProductManagementUI = () => {
         );
       } else {
         console.error("Invalid product master response:", res);
+        toast.error("รูปแบบข้อมูลสินค้าไม่ถูกต้อง");
       }
     } catch (error) {
       console.error("Error fetching products:", error);
+      toast.error("เกิดข้อผิดพลาดในการดึงข้อมูลสินค้า");
     }
   };
 
@@ -126,7 +133,7 @@ const ProductManagementUI = () => {
         const newProduct = {
           ...product,
           tempId: Date.now(),
-          price: product.selling_price,
+          price: product.selling_price || 0,
           editStock: 0,
           sellerId: "",
           shop_id: shopId,
@@ -150,7 +157,7 @@ const ProductManagementUI = () => {
     setSelectedProducts((prev) =>
       prev.map((product) =>
         product.tempId === tempId
-          ? { ...product, editStock: newStock || 0 }
+          ? { ...product, editStock: newStock >= 0 ? newStock : 0 }
           : product
       )
     );
@@ -195,48 +202,92 @@ const ProductManagementUI = () => {
     }
   };
 
-  const addProduct = async () => {
-    console.log("Click");
-    setIsSubmitting(true);
+const addProduct = async () => {
+  console.log("Click");
+  setIsSubmitting(true);
 
-    const invalidProducts = selectedProducts.filter(
-      (product) => !product.price || !product.editStock
-    );
+  // ตรวจสอบว่ากรอกจำนวน (stock) ครบหรือไม่
+  const invalidProducts = selectedProducts.filter(
+    (product) => product.editStock === undefined || product.editStock < 0
+  );
 
-    if (invalidProducts.length > 0) {
-      console.error("กรุณากรอกข้อมูลให้ครบถ้วน (ราคา, จำนวน, ผู้ขาย)");
+  if (invalidProducts.length > 0) {
+    toast.error("กรุณากรอกจำนวนสินค้าให้ครบถ้วนและถูกต้อง");
+    setIsSubmitting(false);
+    return;
+  }
+
+  // ตรวจสอบว่าราคาครบหรือไม่
+  const invalidPriceProducts = selectedProducts.filter(
+    (product) => !product.price || product.price <= 0
+  );
+
+  if (invalidPriceProducts.length > 0) {
+    toast.error("กรุณากรอกราคาสินค้าให้ครบถ้วนและถูกต้อง");
+    setIsSubmitting(false);
+    return;
+  }
+
+  // เตรียมข้อมูลสำหรับส่งไป backend
+  const products = selectedProducts.map((product) => ({
+    product_id: product.product_id,
+    shop_id: shopId,
+    price: parseFloat(product.price),
+    stock: parseInt(product.editStock),
+    product_name: product.name,
+    description: product.description || "",
+    image_url: product.image_url || null,
+    is_active: "ACTIVE",
+    category_id: product.category_id || null,
+    supplier_id: product.supplier_id || null,
+    warehouse_id: product.warehouse_id || null,
+  }));
+
+  console.log('Sending products:', products);
+
+  try {
+    // ตรวจสอบว่า CoreAPI.productHttpService.getmyproduct มีอยู่หรือไม่
+    if (!CoreAPI.productHttpService || typeof CoreAPI.productHttpService.getmyproduct !== 'function') {
+      toast.error("ไม่สามารถเชื่อมต่อกับบริการดึงข้อมูลสินค้าได้ กรุณาติดต่อผู้ดูแลระบบ");
       setIsSubmitting(false);
       return;
     }
 
-    const products = selectedProducts.map((product) => ({
-      product_id: product.product_id,
-      shop_id: shopId,
-      price: parseFloat(product.price),
-      stock: parseInt(product.editStock),
-      product_name: product.name,
-      description: product.description || "",
-      image_url: product.image_url,
-      is_active: "ACTIVE",
-    }));
-
-    try {
-      const response = await CoreAPI.productHttpService.createProduct({
-        products,
-      });
-      console.log("Add product response:", response);
-      if (response.code === 1000) {
-        setSelectedProducts([]);
-        getprodoctMaster();
-      } else {
-        throw new Error(response.message || "เกิดข้อผิดพลาดในการเพิ่มสินค้า");
-      }
-    } catch (error) {
-      console.error("Error adding products:", error);
-    } finally {
+    // ตรวจสอบว่า product_id ซ้ำในตาราง product หรือไม่
+    const existingProductsResponse = await CoreAPI.productHttpService.getmyproduct(shopId);
+    if (existingProductsResponse.code !== 1000 || !Array.isArray(existingProductsResponse.datarow)) {
+      toast.error("ไม่สามารถตรวจสอบสินค้าที่มีอยู่ในร้านได้");
       setIsSubmitting(false);
+      return;
     }
-  };
+
+    const existingProductIds = existingProductsResponse.datarow.map(p => p.product_id);
+    const duplicateProducts = products.filter(p => existingProductIds.includes(p.product_id));
+
+    if (duplicateProducts.length > 0) {
+      const duplicateNames = duplicateProducts.map(p => p.product_name).join(", ");
+      toast.error(`สินค้าต่อไปนี้มีอยู่ในร้านแล้ว: ${duplicateNames}`);
+      setIsSubmitting(false);
+      return;
+    }
+
+    // ส่งคำขอเพิ่มสินค้า
+    const response = await CoreAPI.productHttpService.createProduct({ products });
+    console.log("Add product response:", response);
+    if (response.code === 1000) {
+      toast.success("เพิ่มสินค้าสำเร็จ");
+      setSelectedProducts([]);
+      await getprodoctMaster();
+    } else {
+      toast.error(response.message || "เกิดข้อผิดพลาดในการเพิ่มสินค้า");
+    }
+  } catch (error) {
+    console.error("Error adding products:", error.message, error.stack);
+    toast.error(`เกิดข้อผิดพลาดในการเพิ่มสินค้า: ${error.message}`);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -648,7 +699,7 @@ const ProductManagementUI = () => {
                             onChange={(e) => handleSellerChange(product.tempId, e.target.value)}
                             className="w-36 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white cursor-pointer"
                           >
-                            <option value="">เลือกผู้ขาย</option>
+                            <option value="">เลือกผู้ขาย (ไม่บังคับ)</option>
                             {sellers.map((seller) => (
                               <option key={seller.id} value={seller.id}>
                                 {seller.name} ({seller.shop})
