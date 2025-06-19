@@ -43,7 +43,7 @@ function Login() {
       <div className="bg-white p-8 rounded-xl shadow-xl w-full max-w-md border border-indigo-100">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            ระบบ GoPay
+            GoPay Stock
           </h1>
           <p className="text-gray-500 mt-2">ล็อกอินเข้าสู่บัญชีของคุณ</p>
         </div>
