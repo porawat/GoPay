@@ -57,12 +57,6 @@ function Sidebar({ isOpen, setIsOpen }) {
       label: "ร้านค้า",
       path: "/myshop",
     },
-    // {
-    //   key: "members",
-    //   icon: <UserOutlined />,
-    //   label: "สมาชิก",
-    //   path: "/members",
-    // },
     {
       key: "admin",
       icon: <FaStore style={{ color: "green", marginRight: 8 }} />,
@@ -120,7 +114,7 @@ function Sidebar({ isOpen, setIsOpen }) {
       items={userMenuItems.map((item) => ({
         key: item.key,
         label: item.path ? (
-          <NavLink to={item.path} onClick={() => {}}>
+          <NavLink to={item.path} className="font-kanit">
             <Space>
               {item.icon}
               {item.label}
@@ -134,29 +128,34 @@ function Sidebar({ isOpen, setIsOpen }) {
         ),
         onClick: item.onClick,
       }))}
-      style={{ minWidth: 150 }}
+      style={{ minWidth: 150, fontFamily: "'Kanit', 'Arial', sans-serif" }}
+      className="font-kanit"
     />
   );
 
   return (
     <Sider
       width={isOpen ? 256 : 80}
-      className="fixed h-screen z-50"
+      className="fixed h-screen z-50 font-kanit"
       style={{
         background: "linear-gradient(180deg, #4F46E5, #9333EA)",
         color: "white",
         transition: "width 0.3s ease-in-out",
         overflowY: "auto",
+        fontFamily: "'Kanit', 'Arial', sans-serif",
       }}
       collapsed={!isOpen}
     >
       {/* Header with Toggle Button */}
       <div
-        className="flex items-center justify-between p-4 border-b"
-        style={{ borderColor: "rgba(99, 102, 241, 0.3)" }}
+        className="flex items-center justify-between p-4 border-b font-kanit"
+        style={{
+          borderColor: "rgba(99, 102, 241, 0.3)",
+          fontFamily: "'Kanit', 'Arial', sans-serif",
+        }}
       >
         {isOpen && (
-          <span className="text-xl font-bold tracking-wide text-white">
+          <span className="text-xl font-bold tracking-wide text-white font-kanit">
             ระบบ GoPay
           </span>
         )}
@@ -164,7 +163,8 @@ function Sidebar({ isOpen, setIsOpen }) {
           type="text"
           icon={isOpen ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
           onClick={() => setIsOpen(!isOpen)}
-          style={{ color: "white" }}
+          style={{ color: "white", fontFamily: "'Kanit', 'Arial', sans-serif" }}
+          className="font-kanit"
         />
       </div>
 
@@ -176,7 +176,9 @@ function Sidebar({ isOpen, setIsOpen }) {
           background: "transparent",
           color: "white",
           borderRight: "none",
+          fontFamily: "'Kanit', 'Arial', sans-serif",
         }}
+        className="font-kanit"
         selectedKeys={navItems
           .filter((item) => window.location.pathname === item.path)
           .map((item) => item.key)}
@@ -184,7 +186,7 @@ function Sidebar({ isOpen, setIsOpen }) {
           key: item.key,
           icon: item.icon,
           label: (
-            <NavLink to={item.path} className="text-white">
+            <NavLink to={item.path} className="text-white font-kanit">
               {item.label}
             </NavLink>
           ),
@@ -192,15 +194,22 @@ function Sidebar({ isOpen, setIsOpen }) {
       />
 
       {/* User Section */}
-      <div className="absolute bottom-0 w-full p-4 border-t" style={{ borderColor: "rgba(99, 102, 241, 0.3)" }}>
+      <div
+        className="absolute bottom-0 w-full p-4 border-t font-kanit"
+        style={{
+          borderColor: "rgba(99, 102, 241, 0.3)",
+          fontFamily: "'Kanit', 'Arial', sans-serif",
+        }}
+      >
         <Dropdown overlay={userMenu} trigger={["click"]}>
-          <div className="flex items-center cursor-pointer">
+          <div className="flex items-center cursor-pointer font-kanit">
             <Avatar
               icon={<UserOutlined />}
-              style={{ backgroundColor: "#6366F1" }}
+              style={{ backgroundColor: "#6366F1", fontFamily: "'Kanit', 'Arial', sans-serif" }}
+              className="font-kanit"
             />
             {isOpen && (
-              <span className="ml-3 text-white truncate">{username}</span>
+              <span className="ml-3 text-white truncate font-kanit">{username}</span>
             )}
           </div>
         </Dropdown>
