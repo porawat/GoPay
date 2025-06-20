@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import CoreAPI from "../../../../store";
-
+import { Select } from 'antd';
 export default function ProductMasterForm({
   action = "create",
   onCancel,
@@ -33,16 +33,21 @@ export default function ProductMasterForm({
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(null);
-
   const [categoryList, setCategoryList] = useState([]);
-
+  const [supplierList, setSupplierList] = useState([]);
+  const onChange = value => {
+  console.log(`selected ${value}`);
+};
+const onSearch = value => {
+  console.log('search:', value);
+};
   const getCategoryList = async () => {
-    const res = await CoreAPI.categoryHttpService.getCategory();
+    const res = await CoreAPI.categoryHttpService.getCategories();
     console.log("API Response:", res);
-    const { code, message, data } = res;
+    const { code, message, datarow } = res;
     try {
       if (code === 1000) {
-        setCategoryList(data);
+        setCategoryList(datarow);
       } else {
         setCategoryList([]);
         console.error("Error fetching products:", message);
@@ -51,12 +56,24 @@ export default function ProductMasterForm({
       console.error("Error fetching products:", error);
     }
   };
+const getsupplier = async ()=>{
+  const res = await CoreAPI.supplierHttpService.getSuppliers();
+   console.log(res)
+  const { code,datarow } = res;
+
+  if(code ===1000){
+    setSupplierList(datarow)
+  }
+ 
+}
+
   useEffect(() => {
     getCategoryList();
+    getsupplier();
   }, []);
 
   const onSubmit = async (postdata) => {
-    setIsLoading(true);
+  //  setIsLoading(true);
     setSubmitError(null);
     setSubmitSuccess(null);
 
@@ -109,6 +126,7 @@ export default function ProductMasterForm({
             หมวดหมู่
             <span className="text-red-500">*</span>
           </label>
+         
           <select
             className={`w-full p-3 bg-white rounded border ${
               errors.category_id ? "border-red-500" : "border-gray-300"
@@ -129,6 +147,32 @@ export default function ProductMasterForm({
           )}
         </div>
 
+  <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">
+            Supplier
+            <span className="text-red-500">*</span>
+          </label>
+         
+          <select
+            className={`w-full p-3 bg-white rounded border ${
+              errors.supplier_id ? "border-red-500" : "border-gray-300"
+            } text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            {...register("supplier_id", { required: "ต้องเลือกหมวดหมู่" })}
+          >
+            <option value="">-- เลือกหมวดหมู่ --</option>
+            {supplierList.map((item) => (
+              <option key={item.supplier_id} value={item.supplier_id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+          {errors.supplier_id && (
+            <p className="text-red-500 text-xs mt-1">
+              {errors.supplier_id.message}
+            </p>
+          )}
+        
+</div>
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">
             ชื่อสินค้า<span className="text-red-500">*</span>

@@ -1,29 +1,31 @@
 import axios from 'axios';
 import { API_URL } from '../../../config/config';
-
-export class SupplierHttpService {
-  constructor() {
-    const baseURL = API_URL || import.meta.env.VITE_API_ENDPOINT || 'http://localhost:3001/api';
-    console.log('SupplierHttpService baseURL:', baseURL); // Debug baseURL
-    this.apiClient = axios.create({
-      baseURL,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
+import HTTPCore from '../../http.core';
+ class SupplierHttpService  extends HTTPCore {
+   constructor() {
+    super({});
   }
+    getEnv() {
+        return import.meta.env.VITE_API_ENDPOINT;
+    }
+    getToken() {
+        return localStorage.getItem("token");
+    }
+    getHeaders() {
+        return {
+            headers: {
+                Authorization: `Bearer ${this.getToken()}`,
+                 'Content-Type': 'application/json',
+            },
+        };
+    }
 
   async getSuppliers() {
-    try {
-      const url = '/suppliers';
-      console.log('Fetching suppliers from:', this.apiClient.defaults.baseURL + url);
-      const response = await this.apiClient.get(url);
-      console.log('Supplier API Response:', JSON.stringify(response.data, null, 2));
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching suppliers:', error);
-      throw error;
-    }
+     let config = this.getHeaders();
+     let url = import.meta.env.VITE_API_ENDPOINT;
+        let path = `${url}/supplier`;
+        return this.get(path, config);
   }
 }
+
+export {SupplierHttpService}

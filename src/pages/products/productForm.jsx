@@ -246,6 +246,7 @@ const addProduct = async () => {
   console.log('Sending products:', products);
 
   try {
+    /*
     // ตรวจสอบว่า CoreAPI.productHttpService.getmyproduct มีอยู่หรือไม่
     if (!CoreAPI.productHttpService || typeof CoreAPI.productHttpService.getmyproduct !== 'function') {
       toast.error("ไม่สามารถเชื่อมต่อกับบริการดึงข้อมูลสินค้าได้ กรุณาติดต่อผู้ดูแลระบบ");
@@ -270,7 +271,7 @@ const addProduct = async () => {
       setIsSubmitting(false);
       return;
     }
-
+*/
     // ส่งคำขอเพิ่มสินค้า
     const response = await CoreAPI.productHttpService.createProduct({ products });
     console.log("Add product response:", response);
