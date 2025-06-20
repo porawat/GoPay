@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,9 +6,22 @@
 
 @layer base {
   html {
-    font-family: 'Sarabun', sans-serif;
+    font-family: 'Kanit', 'Arial', sans-serif;
   }
-  
+
+  /* Override Ant Design styles */
+  .ant-layout-sider,
+  .ant-menu,
+  .ant-menu-item,
+  .ant-menu-title-content,
+  .ant-btn,
+  .ant-avatar,
+  .ant-dropdown-trigger,
+  .ant-dropdown-menu,
+  .ant-dropdown-menu-item {
+    @apply font-kanit !important;
+  }
+
   body {
     @apply bg-gray-50 text-gray-800 antialiased;
     min-height: 100vh;
@@ -17,7 +30,7 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-medium;
   }
-  
+
   button, input, select, textarea {
     @apply focus:outline-none;
   }
@@ -27,15 +40,15 @@
   .input-field {
     @apply w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all;
   }
-  
+
   .btn-primary {
     @apply py-3 px-4 bg-gradient-to-r from-teal-500 to-blue-500 text-white font-medium rounded-lg shadow-md hover:from-teal-600 hover:to-blue-600 transition-all transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50 disabled:opacity-70;
   }
-  
+
   .card {
     @apply bg-white rounded-2xl shadow-xl overflow-hidden;
   }
-  
+
   .card-header {
     @apply bg-gradient-to-r from-teal-400 to-blue-500 py-6 px-6;
   }

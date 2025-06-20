@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import CoreAPI from "../../store";
 import { useParams } from "react-router-dom";
+import toast from 'react-hot-toast';
+
 const StatusBadge = ({ status }) => {
   const isActive = status === "ACTIVE";
   return (
@@ -38,41 +40,69 @@ const ProductManagementUI = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 6;
 
   const getCategorys = async () => {
+    if (!CoreAPI.categoryHttpService) {
+      console.error("categoryHttpService is not defined in CoreAPI");
+      toast.error("ไม่สามารถเชื่อมต่อกับบริการหมวดหมู่");
+      return;
+    }
     try {
-      const res = await CoreAPI.categoryHttpService.getCategory();
-
-      const { data, code } = res;
-      if (code === 1000) {
-        const categoriesWithCount = data.map((category) => ({
+      const res = await CoreAPI.categoryHttpService.getCategories();
+      if (!res) {
+        console.error("API response is undefined or null:", res);
+        toast.error("ไม่พบข้อมูลหมวดหมู่");
+        return;
+      }
+      const { code, datarow } = res;
+      if (code === 1000 && Array.isArray(datarow)) {
+        const categoriesWithCount = datarow.map((category) => ({
           ...category,
           count: 0,
         }));
         setCategoryList(categoriesWithCount);
+        await getprodoctMaster(categoriesWithCount);
+      } else {
+        console.error("Invalid API response structure or code:", res);
+        toast.error("รูปแบบข้อมูลหมวดหมู่ไม่ถูกต้อง");
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching categories:", error);
+      toast.error("เกิดข้อผิดพลาดในการดึงข้อมูลหมวดหมู่");
     }
   };
-  const getprodoctMaster = async () => {
+
+  const getprodoctMaster = async (categories = []) => {
     try {
-      const res = await CoreAPI.productMasterHttpService.getproductMasterByid(
-        selectedCategory
-      );
-      const { data, code } = res;
-      if (code === 1000) {
-        setMasterProducts(data);
+      const res = await CoreAPI.productMasterHttpService.getproductMaster();
+      console.log("Product Master API Response:", res);
+      if (res.code === 1000 && Array.isArray(res.data)) {
+        setMasterProducts(res.data);
+        const categoryCounts = res.data.reduce((acc, product) => {
+          if (product.category_id) {
+            acc[product.category_id] = (acc[product.category_id] || 0) + 1;
+          }
+          return acc;
+        }, {});
+        setCategoryList((prev) =>
+          prev.map((category) => ({
+            ...category,
+            count: categoryCounts[category.category_id] || 0,
+          }))
+        );
+      } else {
+        console.error("Invalid product master response:", res);
+        toast.error("รูปแบบข้อมูลสินค้าไม่ถูกต้อง");
       }
     } catch (error) {
-      console.log(error);
+      console.error("Error fetching products:", error);
+      toast.error("เกิดข้อผิดพลาดในการดึงข้อมูลสินค้า");
     }
   };
 
   useEffect(() => {
-    console.log(selectedCategory);
-    getprodoctMaster();
+    console.log("Selected category:", selectedCategory);
   }, [selectedCategory]);
 
   useEffect(() => {
@@ -90,26 +120,20 @@ const ProductManagementUI = () => {
     const matchCategory =
       selectedCategory === "all" || product.category_id === selectedCategory;
     const matchSearch =
-      !searchTerm ||
-      product.name.toLowerCase().includes(searchTerm.toLowerCase());
-
+      !searchTerm || product.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchCategory && matchSearch;
   });
 
   const handleProductSelect = (product) => {
     setSelectedProducts((prev) => {
-      // Check if product is already selected
       const isSelected = prev.some((p) => p.product_id === product.product_id);
-
       if (isSelected) {
-        // Remove product if already selected
         return prev.filter((p) => p.product_id !== product.product_id);
       } else {
-        // Add product if not selected
         const newProduct = {
           ...product,
           tempId: Date.now(),
-          price: product.selling_price,
+          price: product.selling_price || 0,
           editStock: 0,
           sellerId: "",
           shop_id: shopId,
@@ -133,7 +157,7 @@ const ProductManagementUI = () => {
     setSelectedProducts((prev) =>
       prev.map((product) =>
         product.tempId === tempId
-          ? { ...product, editStock: newStock || 0 }
+          ? { ...product, editStock: newStock >= 0 ? newStock : 0 }
           : product
       )
     );
@@ -153,7 +177,6 @@ const ProductManagementUI = () => {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      // Select all current visible items that aren't already selected
       const newSelectedProducts = currentItems
         .filter(
           (item) =>
@@ -166,10 +189,8 @@ const ProductManagementUI = () => {
           editStock: 0,
           sellerId: "",
         }));
-
       setSelectedProducts((prev) => [...prev, ...newSelectedProducts]);
     } else {
-      // Unselect only current visible items
       setSelectedProducts((prev) =>
         prev.filter(
           (item) =>
@@ -181,53 +202,94 @@ const ProductManagementUI = () => {
     }
   };
 
-  const addProduct = async () => {
-    console.log("Click");
+const addProduct = async () => {
+  console.log("Click");
+  setIsSubmitting(true);
 
-    // setIsSubmitting(true);
+  // ตรวจสอบว่ากรอกจำนวน (stock) ครบหรือไม่
+  const invalidProducts = selectedProducts.filter(
+    (product) => product.editStock === undefined || product.editStock < 0
+  );
 
-    // Validate required fields
-    const invalidProducts = selectedProducts.filter(
-      (product) => !product.price || !product.editStock
-    );
+  if (invalidProducts.length > 0) {
+    toast.error("กรุณากรอกจำนวนสินค้าให้ครบถ้วนและถูกต้อง");
+    setIsSubmitting(false);
+    return;
+  }
 
-    if (invalidProducts.length > 0) {
-      console.error("กรุณากรอกข้อมูลให้ครบถ้วน (ราคา, จำนวน, ผู้ขาย)");
+  // ตรวจสอบว่าราคาครบหรือไม่
+  const invalidPriceProducts = selectedProducts.filter(
+    (product) => !product.price || product.price <= 0
+  );
+
+  if (invalidPriceProducts.length > 0) {
+    toast.error("กรุณากรอกราคาสินค้าให้ครบถ้วนและถูกต้อง");
+    setIsSubmitting(false);
+    return;
+  }
+
+  // เตรียมข้อมูลสำหรับส่งไป backend
+  const products = selectedProducts.map((product) => ({
+    product_id: product.product_id,
+    shop_id: shopId,
+    price: parseFloat(product.price),
+    stock: parseInt(product.editStock),
+    product_name: product.name,
+    description: product.description || "",
+    image_url: product.image_url || null,
+    is_active: "ACTIVE",
+    category_id: product.category_id || null,
+    supplier_id: product.supplier_id || null,
+    warehouse_id: product.warehouse_id || null,
+  }));
+
+  console.log('Sending products:', products);
+
+  try {
+    /*
+    // ตรวจสอบว่า CoreAPI.productHttpService.getmyproduct มีอยู่หรือไม่
+    if (!CoreAPI.productHttpService || typeof CoreAPI.productHttpService.getmyproduct !== 'function') {
+      toast.error("ไม่สามารถเชื่อมต่อกับบริการดึงข้อมูลสินค้าได้ กรุณาติดต่อผู้ดูแลระบบ");
+      setIsSubmitting(false);
       return;
     }
 
-    const products = selectedProducts.map((product) => ({
-      product_id: product.product_id,
-      shop_id: shopId,
-      price: parseFloat(product.price),
-      stock: parseInt(product.editStock),
-      product_name: product.name,
-      description: product.description || "",
-      image_url: product.image_url,
-      is_active: "ACTIVE",
-    }));
-    console.log(products);
-
-    try {
-      const response = await CoreAPI.productHttpService.createProduct({
-        products,
-      });
-      console.log(response);
-      if (response.code === 1000) {
-        // message.success("เพิ่มสินค้าสำเร็จ");
-        setSelectedProducts([]);
-        getprodoctMaster(); // Refresh product list
-      } else {
-        throw new Error(response.message || "เกิดข้อผิดพลาดในการเพิ่มสินค้า");
-      }
-    } catch (error) {
-      console.error("Error adding products:", error);
-      // message.error(error.message || "เกิดข้อผิดพลาดในการเพิ่มสินค้า");
-    } finally {
+    // ตรวจสอบว่า product_id ซ้ำในตาราง product หรือไม่
+    const existingProductsResponse = await CoreAPI.productHttpService.getmyproduct(shopId);
+    if (existingProductsResponse.code !== 1000 || !Array.isArray(existingProductsResponse.datarow)) {
+      toast.error("ไม่สามารถตรวจสอบสินค้าที่มีอยู่ในร้านได้");
       setIsSubmitting(false);
+      return;
     }
-  };
-  // Pagination
+
+    const existingProductIds = existingProductsResponse.datarow.map(p => p.product_id);
+    const duplicateProducts = products.filter(p => existingProductIds.includes(p.product_id));
+
+    if (duplicateProducts.length > 0) {
+      const duplicateNames = duplicateProducts.map(p => p.product_name).join(", ");
+      toast.error(`สินค้าต่อไปนี้มีอยู่ในร้านแล้ว: ${duplicateNames}`);
+      setIsSubmitting(false);
+      return;
+    }
+*/
+    // ส่งคำขอเพิ่มสินค้า
+    const response = await CoreAPI.productHttpService.createProduct({ products });
+    console.log("Add product response:", response);
+    if (response.code === 1000) {
+      toast.success("เพิ่มสินค้าสำเร็จ");
+      setSelectedProducts([]);
+      await getprodoctMaster();
+    } else {
+      toast.error(response.message || "เกิดข้อผิดพลาดในการเพิ่มสินค้า");
+    }
+  } catch (error) {
+    console.error("Error adding products:", error.message, error.stack);
+    toast.error(`เกิดข้อผิดพลาดในการเพิ่มสินค้า: ${error.message}`);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredProducts.slice(
@@ -257,14 +319,11 @@ const ProductManagementUI = () => {
                 />
               </svg>
             </button>
-            <h2 className="text-lg font-semibold text-gray-900">
-              จัดการสินค้า
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-900">จัดการสินค้า</h2>
             <div></div>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {/* Categories Section */}
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium text-gray-900 flex items-center">
@@ -302,11 +361,11 @@ const ProductManagementUI = () => {
               </button>
               {categories.map((category) => (
                 <button
-                  key={category.id}
+                  key={category.category_id}
                   onClick={() => setSelectedCategory(category.category_id)}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                     selectedCategory === category.category_id
-                      ? "bg-green-50 text-green-700 border border-green-200"
+                      ? "bg-blue-50 text-blue-700 border border-blue-200"
                       : "text-gray-700 hover:bg-gray-50"
                   }`}
                 >
@@ -329,17 +388,13 @@ const ProductManagementUI = () => {
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">
-                  รายการสินค้า
-                </h1>
-                <p className="text-sm text-gray-500">
-                  {filteredProducts.length} รายการ
-                </p>
+                <h1 className="text-xl font-semibold text-gray-900">รายการสินค้า</h1>
+                <p className="text-sm text-gray-500">{filteredProducts.length} รายการ</p>
               </div>
               <div className="flex items-center space-x-3">
                 <button className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
                   <svg
-                    className="w-4 h-4 mr-2"
+                    className="w-4 h-4 mr-2 none"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -402,9 +457,7 @@ const ProductManagementUI = () => {
             </div>
             {selectedProducts.length > 0 && (
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">
-                  {selectedProducts.length} รายการที่เลือก
-                </span>
+                <span className="text-sm text-gray-600">{selectedProducts.length} รายการที่เลือก</span>
                 <button
                   onClick={() => setSelectedProducts([])}
                   className="px-3 py-1.5 text-sm bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
@@ -424,9 +477,7 @@ const ProductManagementUI = () => {
                   checked={
                     currentItems.length > 0 &&
                     currentItems.every((item) =>
-                      selectedProducts.some(
-                        (p) => p.product_id === item.product_id
-                      )
+                      selectedProducts.some((p) => p.product_id === item.product_id)
                     )
                   }
                   onChange={handleSelectAll}
@@ -459,12 +510,8 @@ const ProductManagementUI = () => {
                       />
                     </svg>
                   </div>
-                  <h3 className="mt-4 text-lg font-semibold text-gray-900">
-                    ไม่พบสินค้า
-                  </h3>
-                  <p className="mt-2 text-sm text-gray-500">
-                    ไม่พบสินค้าที่ตรงกับการค้นหาของคุณ
-                  </p>
+                  <h3 className="mt-4 text-lg font-semibold text-gray-900">ไม่พบสินค้า</h3>
+                  <p className="mt-2 text-sm text-gray-500">ไม่พบสินค้าที่ตรงกับการค้นหาของคุณ</p>
                 </div>
               ) : (
                 currentItems.map((product) => (
@@ -477,9 +524,7 @@ const ProductManagementUI = () => {
                       <input
                         type="checkbox"
                         className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        checked={selectedProducts.some(
-                          (p) => p.product_id === product.product_id
-                        )}
+                        checked={selectedProducts.some((p) => p.product_id === product.product_id)}
                         onChange={(e) => {
                           e.stopPropagation();
                           handleProductSelect(product);
@@ -490,24 +535,16 @@ const ProductManagementUI = () => {
                         <div className="col-span-4">
                           <div className="flex items-center">
                             <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                              <span className="text-lg">
-                                {product.image_url}
-                              </span>
+                              <span className="text-lg">{product.image_url}</span>
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {product.name}
-                              </p>
-                              <p className="text-sm text-gray-500 truncate">
-                                {product.description}
-                              </p>
+                              <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                              <p className="text-sm text-gray-500 truncate">{product.description}</p>
                             </div>
                           </div>
                         </div>
                         <div className="col-span-2">
-                          <span className="text-sm font-medium text-gray-900">
-                            ฿{product.selling_price}
-                          </span>
+                          <span className="text-sm font-medium text-gray-900">฿{product.selling_price}</span>
                         </div>
                         <div className="col-span-2">
                           <StockIndicator stock={product.stock} />
@@ -553,15 +590,12 @@ const ProductManagementUI = () => {
               <div className="bg-gray-50 border-t border-gray-200 px-6 py-3">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-700">
-                    แสดง {indexOfFirstItem + 1} -{" "}
-                    {Math.min(indexOfLastItem, filteredProducts.length)} จาก{" "}
+                    แสดง {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredProducts.length)} จาก{" "}
                     {filteredProducts.length} รายการ
                   </div>
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(prev - 1, 1))
-                      }
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                       disabled={currentPage === 1}
                       className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                     >
@@ -602,9 +636,7 @@ const ProductManagementUI = () => {
                       })}
                     </div>
                     <button
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                      }
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                       disabled={currentPage === totalPages}
                       className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                     >
@@ -620,9 +652,7 @@ const ProductManagementUI = () => {
             <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <h3 className="text-base font-medium text-gray-900">
-                    รายการสินค้าที่เลือก
-                  </h3>
+                  <h3 className="text-base font-medium text-gray-900">รายการสินค้าที่เลือก</h3>
                   <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                     {selectedProducts.length} รายการ
                   </span>
@@ -636,9 +666,7 @@ const ProductManagementUI = () => {
                       className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200"
                     >
                       <span className="text-lg mr-3">{product.image_url}</span>
-                      <span className="flex-1 font-medium text-sm text-gray-700">
-                        {product.name}
-                      </span>
+                      <span className="flex-1 font-medium text-sm text-gray-700">{product.name}</span>
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center space-x-2">
                           <span className="text-sm text-gray-600">ราคา:</span>
@@ -648,10 +676,7 @@ const ProductManagementUI = () => {
                             step="0.01"
                             value={product.price}
                             onChange={(e) =>
-                              handlePriceChange(
-                                product.tempId,
-                                parseFloat(e.target.value)
-                              )
+                              handlePriceChange(product.tempId, parseFloat(e.target.value))
                             }
                             className="w-20 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                           />
@@ -663,10 +688,7 @@ const ProductManagementUI = () => {
                             min="0"
                             value={product.editStock}
                             onChange={(e) =>
-                              handleStockChange(
-                                product.tempId,
-                                parseInt(e.target.value)
-                              )
+                              handleStockChange(product.tempId, parseInt(e.target.value))
                             }
                             className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                           />
@@ -675,12 +697,10 @@ const ProductManagementUI = () => {
                           <span className="text-sm text-gray-600">ผู้ขาย:</span>
                           <select
                             value={product.sellerId}
-                            onChange={(e) =>
-                              handleSellerChange(product.tempId, e.target.value)
-                            }
+                            onChange={(e) => handleSellerChange(product.tempId, e.target.value)}
                             className="w-36 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white cursor-pointer"
                           >
-                            <option value="">เลือกผู้ขาย</option>
+                            <option value="">เลือกผู้ขาย (ไม่บังคับ)</option>
                             {sellers.map((seller) => (
                               <option key={seller.id} value={seller.id}>
                                 {seller.name} ({seller.shop})
@@ -712,9 +732,7 @@ const ProductManagementUI = () => {
                 </div>
               </div>
               <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                <span className="text-sm text-gray-600">
-                  รวม {selectedProducts.length} รายการสินค้า
-                </span>
+                <span className="text-sm text-gray-600">รวม {selectedProducts.length} รายการสินค้า</span>
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setSelectedProducts([])}

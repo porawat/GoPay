@@ -1,9 +1,9 @@
-//app.jsx
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Outlet,
+  Navigate, // เพิ่ม Navigate
 } from "react-router-dom";
 import { useState } from "react";
 import Login from "./components/Login";
@@ -29,11 +29,11 @@ import CustomerReg from "./pages/customer/customer_reg";
 import PendingApproval from "./pages/customer/PendingApproval";
 import ApproveCustomer from "./pages/customer/ApproveCustomer";
 import CustomerList from "./pages/customer/customer_list";
-import CustomerLogin from "./pages/customer/CustomerLogin"; // เพิ่ม import
-import CustomerDashboard from "./pages/customer/CustomerDashboard"; // เพิ่ม import
-import CustomerProfile from "./pages/customer/CustomerProfile"; // เพิ่ม import
-import CustomerEditProfile from "./pages/customer/CustomerEditProfile"; // เพิ่ม import
-import CustomerChangePassword from "./pages/customer/CustomerChangePassword"; // เพิ่ม import
+import CustomerLogin from "./pages/customer/CustomerLogin";
+import CustomerDashboard from "./pages/customer/CustomerDashboard";
+import CustomerProfile from "./pages/customer/CustomerProfile";
+import CustomerEditProfile from "./pages/customer/CustomerEditProfile";
+import CustomerChangePassword from "./pages/customer/CustomerChangePassword";
 import 'antd/dist/reset.css';
 
 function Layout({ isOpen, setIsOpen }) {
@@ -58,8 +58,10 @@ function App() {
     <Router>
       <div className="min-h-screen bg-white">
         <Routes>
+          {/* เพิ่ม Route สำหรับหน้าแรกให้ redirect ไปที่ /login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/customer/login" element={<CustomerLogin />} /> {/* เพิ่ม route */}
+          <Route path="/customer/login" element={<CustomerLogin />} />
           <Route path="/join/:shopId" element={<CustomerReg />} />
           <Route path="/pending-approval/:customerId" element={<PendingApproval />} />
           <Route element={<Layout isOpen={isOpen} setIsOpen={setIsOpen} />}>
@@ -78,31 +80,31 @@ function App() {
                   <CustomerDashboard />
                 </ProtectedRoute>
               }
-            /> {/* เพิ่ม route */}
+            />
             <Route
-  path="/customer/profile"
-  element={
-    <ProtectedRoute>
-      <CustomerProfile />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/customer/profile/edit"
-  element={
-    <ProtectedRoute>
-      <CustomerEditProfile />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/customer/change-password"
-  element={
-    <ProtectedRoute>
-      <CustomerChangePassword />
-    </ProtectedRoute>
-  }
-/>
+              path="/customer/profile"
+              element={
+                <ProtectedRoute>
+                  <CustomerProfile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/customer/profile/edit"
+              element={
+                <ProtectedRoute>
+                  <CustomerEditProfile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/customer/change-password"
+              element={
+                <ProtectedRoute>
+                  <CustomerChangePassword />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/profile"
               element={

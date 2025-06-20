@@ -5,7 +5,6 @@ import CoreAPI from "../../store";
 import { Modal } from "antd";
 import ProductForm from "./modal/productEditForm";
 
-// Define StatusBadge as a standalone component
 const StatusBadge = ({ status }) => {
   const isActive = status === "ACTIVE";
   return (
@@ -26,7 +25,6 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// Define StockIndicator as a standalone component
 const StockIndicator = ({ stock }) => {
   let colorClass = "text-green-600";
   if (stock === 0) colorClass = "text-red-600";
@@ -35,7 +33,6 @@ const StockIndicator = ({ stock }) => {
   return <span className={`font-medium ${colorClass}`}>{stock}</span>;
 };
 
-// PropTypes for StatusBadge and StockIndicator
 StatusBadge.propTypes = {
   status: PropTypes.string.isRequired,
 };
@@ -57,68 +54,89 @@ const ProductPage = () => {
   const [itemsPerPage] = useState(10);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedWarehouse, setSelectedWarehouse] = useState("all");
-  const [expandedCategories, setExpandedCategories] = useState({});
-  const [expandedWarehouses, setExpandedWarehouses] = useState({});
+  const [selectedSupplier, setSelectedSupplier] = useState("all");
   const shopId = params?.shopId || "";
   const [editModalOpen, setEditModalOpen] = useState({
     open: false,
     product: null,
   });
+  const [warehouses, setWarehouses] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
 
-  // Mock data for warehouses and categories
-  const warehouses = [
-    { id: "wh1", name: "คลังสินค้าหลัก", location: "กรุงเทพ", count: 150 },
-    { id: "wh2", name: "คลังสินค้าภาคเหนือ", location: "เชียงใหม่", count: 75 },
-    { id: "wh3", name: "คลังสินค้าภาคใต้", location: "ภูเก็ต", count: 50 },
-  ];
+  const fetchFilters = async () => {
+    try {
+      const warehouseResponse = await CoreAPI.warehouseHttpService.getWarehouses(shopId);
+      console.log('Warehouse Response:', JSON.stringify(warehouseResponse, null, 2));
+      const warehouseData = warehouseResponse?.datarow || warehouseResponse?.data || [];
+      setWarehouses(warehouseData);
+      console.log('Set Warehouses:', JSON.stringify(warehouseData, null, 2));
 
-  const categories = [
-    {
-      id: "electronics",
-      name: "อิเล็กทรอนิกส์",
-      count: 45,
-      subcategories: [
-        { id: "mobile", name: "มือถือ", count: 25 },
-        { id: "laptop", name: "คอมพิวเตอร์", count: 15 },
-        { id: "accessories", name: "อุปกรณ์เสริม", count: 5 },
-      ],
-    },
-    {
-      id: "fashion",
-      name: "เสื้อผ้าแฟชั่น",
-      count: 80,
-      subcategories: [
-        { id: "men", name: "เสื้อผ้าผู้ชาย", count: 30 },
-        { id: "women", name: "เสื้อผ้าผู้หญิง", count: 40 },
-        { id: "shoes", name: "รองเท้า", count: 10 },
-      ],
-    },
-    {
-      id: "home",
-      name: "ของใช้ในบ้าน",
-      count: 35,
-      subcategories: [
-        { id: "furniture", name: "เฟอร์นิเจอร์", count: 15 },
-        { id: "kitchen", name: "ห้องครัว", count: 20 },
-      ],
-    },
-  ];
+      const categoryResponse = await CoreAPI.categoryHttpService.getCategories();
+      console.log('Category Response:', JSON.stringify(categoryResponse, null, 2));
+      const categoryData = categoryResponse?.datarow || categoryResponse?.data || [];
+      setCategories(categoryData);
+      console.log('Set Categories:', JSON.stringify(categoryData, null, 2));
+
+      const supplierResponse = await CoreAPI.supplierHttpService.getSuppliers();
+      console.log('Supplier Response:', JSON.stringify(supplierResponse, null, 2));
+      const supplierData = supplierResponse?.datarow || supplierResponse?.data || [];
+      setSuppliers(supplierData);
+      console.log('Set Suppliers:', JSON.stringify(supplierData, null, 2));
+
+      if (!warehouseData.length || !categoryData.length || !supplierData.length) {
+        console.warn("Some filter data is empty, relying on product response.");
+      }
+    } catch (error) {
+      console.error("Error fetching filters:", error);
+      setWarehouses([]);
+      setCategories([]);
+      setSuppliers([]);
+    }
+  };
 
   const getProducts = async () => {
     setIsLoading(true);
     setError(null);
     try {
+      console.log('Fetching products for shopId:', shopId);
       const response = await CoreAPI.productHttpService.getproduct(shopId);
-      console.log("API Response:", response);
-      console.log("Products Data:", response?.datarow);
+      console.log('Product Response:', JSON.stringify(response, null, 2));
       if (response?.code === 1000) {
         const validProducts = (response?.datarow || []).map((product) => ({
           ...product,
-          product_name:
-            product.product_name || product.name || "ไม่มีชื่อสินค้า",
+          product_name: product.product_name || product.name || "ไม่มีชื่อสินค้า",
+          supplier_id: product.supplier_id || null,
+          warehouse_id: product.warehouse_id || null,
+          category_id: product.category_id || null,
+          is_active: product.is_active || "INACTIVE",
         }));
         setProducts(validProducts);
         setFilteredProducts(validProducts);
+
+        const uniqueWarehouses = [
+          ...new Map(
+            validProducts.map((p) => [p.warehouse_id, p.warehouse])
+          ).values(),
+        ].filter((w) => w && w.warehouse_id);
+        const uniqueCategories = [
+          ...new Map(
+            validProducts.map((p) => [p.category_id, p.category])
+          ).values(),
+        ].filter((c) => c && c.category_id);
+        const uniqueSuppliers = [
+          ...new Map(
+            validProducts.map((p) => [p.supplier_id, p.supplier])
+          ).values(),
+        ].filter((s) => s && s.supplier_id);
+
+        console.log('Extracted Warehouses:', JSON.stringify(uniqueWarehouses, null, 2));
+        console.log('Extracted Categories:', JSON.stringify(uniqueCategories, null, 2));
+        console.log('Extracted Suppliers:', JSON.stringify(uniqueSuppliers, null, 2));
+
+        setWarehouses((prev) => (prev.length ? prev : uniqueWarehouses));
+        setCategories((prev) => (prev.length ? prev : uniqueCategories));
+        setSuppliers((prev) => (prev.length ? prev : uniqueSuppliers));
       } else {
         setError(
           "ไม่สามารถดึงข้อมูลสินค้าได้: " +
@@ -143,26 +161,39 @@ const ProductPage = () => {
   };
 
   useEffect(() => {
+    console.log('Shop ID:', shopId);
     getProducts();
+    fetchFilters();
   }, [shopId]);
 
-  // Search and filter logic
   useEffect(() => {
+    console.log('Filtering with:', {
+      searchTerm,
+      selectedCategory,
+      selectedWarehouse,
+      selectedSupplier,
+    });
     let filtered = products.filter((product) => {
       const productName = product.product_name || product.name || "";
       const matchesSearch = productName
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === "all" || true; // Replace with actual category check
-      const matchesWarehouse = selectedWarehouse === "all" || true; // Replace with actual warehouse check
-      return matchesSearch && matchesCategory && matchesWarehouse;
+      const matchesCategory =
+        selectedCategory === "all" ||
+        product.category_id === selectedCategory;
+      const matchesWarehouse =
+        selectedWarehouse === "all" ||
+        product.warehouse_id === selectedWarehouse;
+      const matchesSupplier =
+        selectedSupplier === "all" ||
+        product.supplier_id === selectedSupplier;
+      return matchesSearch && matchesCategory && matchesWarehouse && matchesSupplier;
     });
-
+    console.log('Filtered Products:', JSON.stringify(filtered, null, 2));
     setFilteredProducts(filtered);
     setCurrentPage(1);
-  }, [searchTerm, products, selectedCategory, selectedWarehouse]);
+  }, [searchTerm, products, selectedCategory, selectedWarehouse, selectedSupplier]);
 
-  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
@@ -170,34 +201,18 @@ const ProductPage = () => {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedProducts(
-        currentItems.map((item) => item.id || item.product_id)
-      );
+      setSelectedProducts(currentItems.map((item) => item.product_uid));
     } else {
       setSelectedProducts([]);
     }
   };
 
-  const handleSelectProduct = (productId) => {
+  const handleSelectProduct = (productUid) => {
     setSelectedProducts((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
+      prev.includes(productUid)
+        ? prev.filter((id) => id !== productUid)
+        : [...prev, productUid]
     );
-  };
-
-  const toggleCategoryExpand = (categoryId) => {
-    setExpandedCategories((prev) => ({
-      ...prev,
-      [categoryId]: !prev[categoryId],
-    }));
-  };
-
-  const toggleWarehouseExpand = (warehouseId) => {
-    setExpandedWarehouses((prev) => ({
-      ...prev,
-      [warehouseId]: !prev[warehouseId],
-    }));
   };
 
   return (
@@ -215,11 +230,11 @@ const ProductPage = () => {
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                strokeWidth={2}
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
                   d="M15 19l-7-7 7-7"
                 />
               </svg>
@@ -232,7 +247,7 @@ const ProductPage = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {/* Warehouses Section */}
+          {/* Warehouses */}
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium text-gray-900 flex items-center">
@@ -241,11 +256,11 @@ const ProductPage = () => {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  strokeWidth={2}
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
                     d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                   />
                 </svg>
@@ -255,7 +270,10 @@ const ProductPage = () => {
 
             <div className="space-y-1">
               <button
-                onClick={() => setSelectedWarehouse("all")}
+                onClick={() => {
+                  console.log('Selecting all warehouses');
+                  setSelectedWarehouse("all");
+                }}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                   selectedWarehouse === "all"
                     ? "bg-blue-50 text-blue-700 border border-blue-200"
@@ -265,39 +283,117 @@ const ProductPage = () => {
                 <div className="flex items-center justify-between">
                   <span>ทั้งหมด</span>
                   <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                    {warehouses.reduce((sum, wh) => sum + wh.count, 0)}
+                    {products.length}
                   </span>
                 </div>
               </button>
 
+              {warehouses.length === 0 && (
+                <div className="text-sm text-gray-500 px-3 py-2">ไม่มีคลังสินค้า</div>
+              )}
               {warehouses.map((warehouse) => (
-                <div key={warehouse.id}>
-                  <button
-                    onClick={() => setSelectedWarehouse(warehouse.id)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                      selectedWarehouse === warehouse.id
-                        ? "bg-blue-50 text-blue-700 border border-blue-200"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium">{warehouse.name}</div>
-                        <div className="text-xs text-gray-500">
-                          {warehouse.location}
-                        </div>
+                <button
+                  key={warehouse.warehouse_id}
+                  onClick={() => {
+                    console.log('Selecting warehouse:', warehouse.warehouse_id);
+                    setSelectedWarehouse(warehouse.warehouse_id);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    selectedWarehouse === warehouse.warehouse_id
+                      ? "bg-blue-50 text-blue-700 border border-blue-200"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{warehouse.name || 'ไม่มีชื่อคลัง'}</div>
+                      <div className="text-xs text-gray-500">
+                        {warehouse.location || '-'}
                       </div>
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                        {warehouse.count}
-                      </span>
                     </div>
-                  </button>
-                </div>
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                      {products.filter(p => p.warehouse_id === warehouse.warehouse_id).length}
+                    </span>
+                  </div>
+                </button>
               ))}
             </div>
           </div>
 
-          {/* Categories Section */}
+          {/* Suppliers */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-900 flex items-center">
+                <svg
+                  className="w-4 h-4 mr-2 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 1.857h10M12 3a9 9 0 110 18"
+                  />
+                </svg>
+                ผู้ขาย
+              </h3>
+            </div>
+
+            <div className="space-y-1">
+              <button
+                onClick={() => {
+                  console.log('Selecting all suppliers');
+                  setSelectedSupplier("all");
+                }}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                  selectedSupplier === "all"
+                    ? "bg-purple-50 text-purple-700 border border-purple-200"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>ทั้งหมด</span>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                    {products.length}
+                  </span>
+                </div>
+              </button>
+
+              {suppliers.length === 0 && (
+                <div className="text-sm text-gray-500 px-3 py-2">ไม่มีผู้ขาย</div>
+              )}
+              {suppliers.map((supplier) => (
+                <button
+                  key={supplier.supplier_id}
+                  onClick={() => {
+                    console.log('Selecting supplier:', supplier.supplier_id);
+                    setSelectedSupplier(supplier.supplier_id);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    selectedSupplier === supplier.supplier_id
+                      ? "bg-purple-50 text-purple-700 border border-purple-200"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{supplier.name || 'ไม่มีชื่อผู้ขาย'}</div>
+                      <div className="text-xs text-gray-500">
+                        {supplier.contact_info || '-'}
+                      </div>
+                    </div>
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                      {products.filter(p => p.supplier_id === supplier.supplier_id).length}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Categories */}
           <div className="p-4 border-t border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium text-gray-900 flex items-center">
@@ -306,21 +402,24 @@ const ProductPage = () => {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  strokeWidth={2}
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
                     d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                   />
                 </svg>
-                หมวดสินค้า
+                หมวดหมู่
               </h3>
             </div>
 
             <div className="space-y-1">
               <button
-                onClick={() => setSelectedCategory("all")}
+                onClick={() => {
+                  console.log('Selecting all categories');
+                  setSelectedCategory("all");
+                }}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                   selectedCategory === "all"
                     ? "bg-green-50 text-green-700 border border-green-200"
@@ -330,74 +429,34 @@ const ProductPage = () => {
                 <div className="flex items-center justify-between">
                   <span>ทั้งหมด</span>
                   <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                    {categories.reduce((sum, cat) => sum + cat.count, 0)}
+                    {products.length}
                   </span>
                 </div>
               </button>
 
+              {categories.length === 0 && (
+                <div className="text-sm text-gray-500 px-3 py-2">ไม่มีหมวดหมู่</div>
+              )}
               {categories.map((category) => (
-                <div key={category.id}>
-                  <div className="flex items-center">
-                    <button
-                      onClick={() => toggleCategoryExpand(category.id)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <svg
-                        className={`w-3 h-3 text-gray-400 transition-transform ${
-                          expandedCategories[category.id] ? "rotate-90" : ""
-                        }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setSelectedCategory(category.id)}
-                      className={`flex-1 text-left px-2 py-2 rounded-lg text-sm transition-colors ${
-                        selectedCategory === category.id
-                          ? "bg-green-50 text-green-700 border border-green-200"
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{category.name}</span>
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                          {category.count}
-                        </span>
-                      </div>
-                    </button>
+                <button
+                  key={category.category_id}
+                  onClick={() => {
+                    console.log('Selecting category:', category.category_id);
+                    setSelectedCategory(category.category_id);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    selectedCategory === category.category_id
+                      ? "bg-green-50 text-green-700 border border-green-200"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{category.cat_name || 'ไม่มีหมวดหมู่'}</span>
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                      {products.filter(p => p.category_id === category.category_id).length}
+                    </span>
                   </div>
-
-                  {expandedCategories[category.id] && (
-                    <div className="ml-6 mt-1 space-y-1">
-                      {category.subcategories.map((subcategory) => (
-                        <button
-                          key={subcategory.id}
-                          onClick={() => setSelectedCategory(subcategory.id)}
-                          className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                            selectedCategory === subcategory.id
-                              ? "bg-green-50 text-green-700 border border-green-200"
-                              : "text-gray-600 hover:bg-gray-50"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span>{subcategory.name}</span>
-                            <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
-                              {subcategory.count}
-                            </span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -413,23 +472,25 @@ const ProductPage = () => {
                 <h1 className="text-xl font-semibold text-gray-900">
                   รายการสินค้า
                 </h1>
-                <p className="text-sm text-gray-500">
+                <p className="mt-1 text-sm text-gray-500">
                   {filteredProducts.length} รายการ
                 </p>
               </div>
 
               <div className="flex items-center space-x-3">
-                <button className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                <button
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                >
                   <svg
                     className="w-4 h-4 mr-2"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    strokeWidth={2}
                   >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={2}
                       d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
                     />
                   </svg>
@@ -445,11 +506,11 @@ const ProductPage = () => {
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    strokeWidth={2}
                   >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={2}
                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                     />
                   </svg>
@@ -469,11 +530,11 @@ const ProductPage = () => {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  strokeWidth={2}
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                   />
                 </svg>
@@ -492,7 +553,9 @@ const ProductPage = () => {
                 <span className="text-sm text-gray-600">
                   {selectedProducts.length} รายการที่เลือก
                 </span>
-                <button className="px-3 py-1.5 text-sm bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors">
+                <button
+                  className="px-3 py-1.5 text-sm bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                >
                   ลบที่เลือก
                 </button>
               </div>
@@ -518,11 +581,11 @@ const ProductPage = () => {
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
+                      strokeWidth={2}
                     >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth={2}
                         d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
                       />
                     </svg>
@@ -549,12 +612,12 @@ const ProductPage = () => {
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    strokeWidth={2}
                   >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M9 1L9 3"
+                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M9 8"
                     />
                   </svg>
                 </div>
@@ -573,11 +636,11 @@ const ProductPage = () => {
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    strokeWidth={2}
                   >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={2}
                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                     />
                   </svg>
@@ -611,44 +674,48 @@ const ProductPage = () => {
               <div className="divide-y divide-gray-200">
                 {currentItems.map((product) => (
                   <div
-                    key={product.id || product.product_id}
+                    key={product.product_uid}
                     className="px-6 py-4 hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center">
                       <input
                         type="checkbox"
                         className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        checked={selectedProducts.includes(
-                          product.id || product.product_id
-                        )}
-                        onChange={() =>
-                          handleSelectProduct(product.id || product.product_id)
-                        }
+                        checked={selectedProducts.includes(product.product_uid)}
+                        onChange={() => handleSelectProduct(product.product_uid)}
                       />
                       <div className="ml-6 grid grid-cols-12 gap-4 flex-1 items-center">
                         <div className="col-span-4">
                           <div className="flex items-center">
                             <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                              <svg
-                                className="h-5 w-5 text-gray-400"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M9 1L9 3"
+                              {product.image_url ? (
+                                <img
+                                  src={product.image_url}
+                                  alt={product.product_name}
+                                  className="h-10 w-10 object-cover rounded-lg"
                                 />
-                              </svg>
+                              ) : (
+                                <svg
+                                  className="h-5 w-5 text-gray-400"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth={2}
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M9 8"
+                                  />
+                                </svg>
+                              )}
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium text-gray-900 truncate">
                                 {product.product_name}
                               </p>
                               <p className="text-sm text-gray-500 truncate">
-                                {product.description || "-"}
+                                {product.description || '-'}
                               </p>
                             </div>
                           </div>
@@ -671,24 +738,24 @@ const ProductPage = () => {
                         <div className="col-span-2 text-right">
                           <div className="flex items-center justify-end space-x-2">
                             <button
-                              onClick={() =>
-                                setEditModalOpen({ open: true, product })
-                              }
+                              onClick={() => setEditModalOpen({ open: true, product })}
                               className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
                             >
                               แก้ไข
                             </button>
-                            <button className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+                            <button
+                              className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                            >
                               <svg
                                 className="w-4 h-4"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
+                                strokeWidth={2}
                               >
                                 <path
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
-                                  strokeWidth={2}
                                   d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 6a1 1 0 110-2 1 1 0 010 2zm0 6a1 1 0 110-2 1 1 0 010 2z"
                                 />
                               </svg>
@@ -751,9 +818,7 @@ const ProductPage = () => {
                       </div>
 
                       <button
-                        onClick={() =>
-                          setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                        }
+                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                         disabled={currentPage === totalPages}
                         className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                       >
@@ -766,48 +831,47 @@ const ProductPage = () => {
             </div>
           )}
         </div>
-      </div>
 
-      <Modal
-        title={
-          <div className="flex items-center">
-            <svg
-              className="w-5 h-5 mr-2 text-blue-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
+        <Modal
+          title={
+            <div className="flex items-center">
+              <svg
+                className="w-5 h-5 mr-2 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
                 strokeWidth={2}
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
-            แก้ไขข้อมูลสินค้า
-          </div>
-        }
-        open={editModalOpen.open}
-        onOk={handleOk}
-        onCancel={handleCancel}
-        width={800}
-        footer={null}
-        maskClosable={false}
-        destroyOnClose={true}
-        className="edit-product-modal"
-      >
-        {editModalOpen.product && (
-          <ProductForm
-            product={editModalOpen.product}
-            shopId={shopId}
-            onSuccess={handleOk}
-            onCancel={handleCancel}
-          />
-        )}
-      </Modal>
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+              แก้ไขข้อมูลสินค้า
+            </div>
+          }
+          open={editModalOpen.open}
+          onOk={handleOk}
+          onCancel={handleCancel}
+          width={800}
+          footer={null}
+          maskClosable={false}
+          destroyOnClose={true}
+          className="edit-product-modal"
+        >
+          {editModalOpen.product && (
+            <ProductForm
+              product={editModalOpen.product}
+              shopId={shopId}
+              onSuccess={handleOk}
+              onCancel={handleCancel}
+            />
+          )}
+        </Modal>
+      </div>
     </div>
   );
 };
 
 export default ProductPage;
-export { StatusBadge, StockIndicator };
